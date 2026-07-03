@@ -112,7 +112,7 @@ internal static class RoboticsServerConfiguration
                 DeleteOnLoad = true,
                 TraceMasks = Utils.TraceMasks.Error |
                              Utils.TraceMasks.Information |
-                             Utils.TraceMasks.Security
+                             Utils.TraceMasks.Securitye 
             }
         };
 
