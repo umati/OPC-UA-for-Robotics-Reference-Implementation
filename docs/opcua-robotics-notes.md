@@ -8,9 +8,9 @@ Robotics namespace URI:
 
 ## Demo Robot
 
-The demo robot is a simulated 6-axis industrial robot.
+The demo robot is a neutral simulated 6-axis industrial robot.
 
-It is not intended to represent any specific commercial robot.
+It is not intended to represent any specific commercial robot brand, model, or product.
 
 The simulation should use physically plausible joint-space motion, including joint limits, velocity limits, acceleration limits, and smooth deceleration.
 

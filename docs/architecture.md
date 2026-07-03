@@ -8,7 +8,7 @@ The server uses the OPC Foundation .NET SDK. The Robotics companion specificatio
 
 1. OPC UA host
 2. Information model loading/instantiation
-3. Robot simulation with physically plausible joint-space motion, including joint limits, velocity limits, acceleration limits, and smooth deceleration
+3. Neutral reference robot simulation using physically plausible joint-space motion, including joint limits, velocity limits, acceleration limits, and smooth deceleration
 4. Program execution
 
 ## Future Layers

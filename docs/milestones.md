@@ -2,7 +2,7 @@
 
 1. Minimal OPC UA server.
 2. Load required NodeSets.
-3. Instantiate a simulated 6-axis robot.
+3. Instantiate a neutral simulated 6-axis robot using the Reference Implementation / SixAxisRobot identity.
 4. Expose asset management variables.
 5. Expose condition monitoring variables.
 6. Add live simulation updates using physically plausible joint-space motion, including joint limits, velocity limits, acceleration limits, and smooth deceleration.
