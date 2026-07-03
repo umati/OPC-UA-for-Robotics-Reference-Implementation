@@ -10,6 +10,10 @@ Robotics namespace URI:
 
 The demo robot is a simulated 6-axis industrial robot.
 
+It is not intended to represent any specific commercial robot.
+
+The simulation should use physically plausible joint-space motion, including joint limits, velocity limits, acceleration limits, and smooth deceleration.
+
 ## Axis Mapping
 
 | Axis | Meaning |
@@ -25,7 +29,7 @@ The demo robot is a simulated 6-axis industrial robot.
 
 | Field | Value |
 | --- | --- |
-| Manufacturer | Yamaha |
-| Model | GP8 |
-| SerialNumber | SIM-ROB-0001 |
-| ProductCode | GP8-SIM |
+| Manufacturer | Reference Implementation |
+| Model | SixAxisRobot |
+| SerialNumber | SIM-6AXIS-0001 |
+| ProductCode | REF-SIX-AXIS-SIM |
