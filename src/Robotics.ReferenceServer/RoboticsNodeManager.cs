@@ -2,6 +2,7 @@ using Opc.Ua;
 using Opc.Ua.Server;
 using Robotics.ReferenceServer.Simulation;
 using Robotics.Shared;
+using System.Text.Json;
 
 namespace Robotics.ReferenceServer;
 
@@ -9,8 +10,15 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
 {
     private const string NamespaceUri = "urn:RoboticsReferenceServer:Robotics";
     private static readonly TimeSpan SimulationUpdateInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly IReadOnlyDictionary<string, string> SampleProgramFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["pick-and-place-demo"] = "pick-and-place-demo.json",
+        ["axis-range-demo"] = "axis-range-demo.json"
+    };
+    private static readonly JsonSerializerOptions ProgramJsonOptions = new(JsonSerializerDefaults.Web);
 
-    private readonly RobotSimulationService _simulationService = new();
+    private readonly RobotSimulationService _simulationService;
+    private readonly RobotProgramExecutor _programExecutor;
     private readonly List<BaseVariableState> _telemetryVariables = [];
     private readonly Dictionary<RobotAxisName, AxisVariableSet> _axisVariables = [];
 
@@ -19,12 +27,15 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private BaseDataVariableState<double>? _accelerationVariable;
     private PoseVariableSet? _poseVariables;
     private RemoteControlStatusVariableSet? _remoteControlStatusVariables;
+    private RemoteProgramStatusVariableSet? _remoteProgramStatusVariables;
     private Timer? _simulationTimer;
     private DateTimeOffset _lastSimulationUpdateUtc = DateTimeOffset.UtcNow;
 
     public RoboticsNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         : base(server, configuration, NamespaceUri)
     {
+        _simulationService = new RobotSimulationService();
+        _programExecutor = new RobotProgramExecutor(_simulationService);
         SystemContext.NodeIdFactory = this;
     }
 
@@ -101,6 +112,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         }
 
         CreateRemoteControl(robot);
+        CreateRemotePrograms(robot);
 
         return robot;
     }
@@ -132,6 +144,39 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         CreateMethod(remoteControl, "Robots.SixAxisRobot.RemoteControl.ResetToHome", "ResetToHome", OnResetToHome);
         CreateMethod(remoteControl, "Robots.SixAxisRobot.RemoteControl.StartDemoMotion", "StartDemoMotion", OnStartDemoMotion);
         CreateMethod(remoteControl, "Robots.SixAxisRobot.RemoteControl.StopMotion", "StopMotion", OnStopMotion);
+    }
+
+    private void CreateRemotePrograms(NodeState robot)
+    {
+        var remotePrograms = CreateFolder(robot, "Robots.SixAxisRobot.RemotePrograms", "RemotePrograms", ReferenceTypeIds.HasComponent);
+
+        _remoteProgramStatusVariables = new RemoteProgramStatusVariableSet(
+            CreateVariable(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.CurrentProgramName", "CurrentProgramName", DataTypeIds.String, string.Empty),
+            CreateVariable(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.ProgramExecutionState", "ProgramExecutionState", DataTypeIds.String, RobotProgramExecutionState.Idle.ToString()),
+            CreateVariable(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.CurrentStepIndex", "CurrentStepIndex", DataTypeIds.Int32, -1),
+            CreateVariable(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.LastProgramCommandName", "LastProgramCommandName", DataTypeIds.String, string.Empty),
+            CreateVariable(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.LastProgramCommandAccepted", "LastProgramCommandAccepted", DataTypeIds.Boolean, false),
+            CreateVariable(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.LastProgramMessage", "LastProgramMessage", DataTypeIds.String, "No program command has been called."),
+            CreateVariable(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.LastProgramCommandTimestampUtc", "LastProgramCommandTimestampUtc", DataTypeIds.DateTime, DateTime.MinValue));
+
+        CreateMethod(
+            remotePrograms,
+            "Robots.SixAxisRobot.RemotePrograms.LoadProgramFromJson",
+            "LoadProgramFromJson",
+            OnLoadProgramFromJson,
+            [CreateStringArgument("ProgramJson")]);
+
+        CreateMethod(
+            remotePrograms,
+            "Robots.SixAxisRobot.RemotePrograms.LoadSampleProgram",
+            "LoadSampleProgram",
+            OnLoadSampleProgram,
+            [CreateStringArgument("SampleProgramName")]);
+
+        CreateMethod(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.StartProgram", "StartProgram", OnStartProgram);
+        CreateMethod(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.PauseProgram", "PauseProgram", OnPauseProgram);
+        CreateMethod(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.ResumeProgram", "ResumeProgram", OnResumeProgram);
+        CreateMethod(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.StopProgram", "StopProgram", OnStopProgram);
     }
 
     private void CreateAxis(NodeState axesFolder, RobotAxisName axisName)
@@ -376,6 +421,202 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         return ServiceResult.Good;
     }
 
+    private ServiceResult OnLoadProgramFromJson(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (inputArguments.Count != 1 || inputArguments[0] is not string programJson || string.IsNullOrWhiteSpace(programJson))
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus("LoadProgramFromJson", false, "LoadProgramFromJson requires a non-empty ProgramJson string.");
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+
+        RobotProgram? program;
+        try
+        {
+            program = JsonSerializer.Deserialize<RobotProgram>(programJson, ProgramJsonOptions);
+        }
+        catch (JsonException exception)
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus("LoadProgramFromJson", false, $"ProgramJson is not valid JSON: {exception.Message}");
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+
+        return LoadProgram("LoadProgramFromJson", program, "ProgramJson accepted.");
+    }
+
+    private ServiceResult OnLoadSampleProgram(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (inputArguments.Count != 1 || inputArguments[0] is not string sampleProgramName || string.IsNullOrWhiteSpace(sampleProgramName))
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, "LoadSampleProgram requires a non-empty SampleProgramName string.");
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+
+        string normalizedName = NormalizeSampleProgramName(sampleProgramName);
+        if (!SampleProgramFiles.TryGetValue(normalizedName, out string? fileName))
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program '{sampleProgramName}' is not supported.");
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+
+        string? sampleProgramPath = FindSampleProgramPath(fileName);
+        if (sampleProgramPath is null)
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program file '{fileName}' was not found.");
+            }
+
+            return StatusCodes.BadNotFound;
+        }
+
+        RobotProgram? program;
+        try
+        {
+            string programJson = File.ReadAllText(sampleProgramPath);
+            program = JsonSerializer.Deserialize<RobotProgram>(programJson, ProgramJsonOptions);
+        }
+        catch (IOException exception)
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program file could not be read: {exception.Message}");
+            }
+
+            return StatusCodes.BadUnexpectedError;
+        }
+        catch (JsonException exception)
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program file is not valid JSON: {exception.Message}");
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+
+        return LoadProgram("LoadSampleProgram", program, $"Sample program '{normalizedName}' accepted.");
+    }
+
+    private ServiceResult OnStartProgram(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        lock (Lock)
+        {
+            bool accepted = _programExecutor.Start();
+            string message = accepted
+                ? "Program start accepted."
+                : GetProgramCommandRejectionMessage("Program start was rejected.");
+
+            UpdateRemoteProgramCommandStatus("StartProgram", accepted, message);
+            return accepted ? ServiceResult.Good : StatusCodes.BadInvalidState;
+        }
+    }
+
+    private ServiceResult OnPauseProgram(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        lock (Lock)
+        {
+            RobotProgramExecutionState currentState = _programExecutor.State;
+            bool accepted = _programExecutor.Pause();
+            string message = accepted
+                ? "Program pause accepted."
+                : $"Program pause was rejected because the program is {currentState}, not Running.";
+
+            UpdateRemoteProgramCommandStatus(
+                "PauseProgram",
+                accepted,
+                message);
+
+            return ServiceResult.Good;
+        }
+    }
+
+    private ServiceResult OnResumeProgram(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        lock (Lock)
+        {
+            bool accepted = _programExecutor.Resume();
+            UpdateRemoteProgramCommandStatus(
+                "ResumeProgram",
+                accepted,
+                accepted ? "Program resume accepted." : "Program resume was rejected because the program is not paused.");
+
+            return accepted ? ServiceResult.Good : StatusCodes.BadInvalidState;
+        }
+    }
+
+    private ServiceResult OnStopProgram(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        lock (Lock)
+        {
+            _programExecutor.Stop();
+            UpdateRemoteProgramCommandStatus("StopProgram", true, "Program stop accepted.");
+            return ServiceResult.Good;
+        }
+    }
+
+    private ServiceResult LoadProgram(string commandName, RobotProgram? program, string acceptedMessage)
+    {
+        RobotProgramValidationResult validationResult = RobotProgramValidator.Validate(program);
+        if (!validationResult.IsValid)
+        {
+            lock (Lock)
+            {
+                UpdateRemoteProgramCommandStatus(commandName, false, string.Join(" ", validationResult.ErrorMessages));
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+
+        lock (Lock)
+        {
+            RobotProgramValidationResult loadResult = _programExecutor.LoadProgram(program!);
+            bool accepted = loadResult.IsValid;
+            string message = accepted ? acceptedMessage : string.Join(" ", loadResult.ErrorMessages);
+            UpdateRemoteProgramCommandStatus(commandName, accepted, message);
+            return accepted ? ServiceResult.Good : StatusCodes.BadInvalidArgument;
+        }
+    }
+
     private void UpdateRemoteControlStatus(string commandName, bool accepted, string message)
     {
         DateTime timestamp = DateTime.UtcNow;
@@ -391,6 +632,41 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         _remoteControlStatusVariables?.LastCommandTimestampUtc.ClearChangeMasks(SystemContext, false);
     }
 
+    private void UpdateRemoteProgramCommandStatus(string commandName, bool accepted, string message)
+    {
+        DateTime timestamp = DateTime.UtcNow;
+
+        SetVariableValue(_remoteProgramStatusVariables?.LastProgramCommandName, commandName, timestamp);
+        SetVariableValue(_remoteProgramStatusVariables?.LastProgramCommandAccepted, accepted, timestamp);
+        SetVariableValue(_remoteProgramStatusVariables?.LastProgramMessage, message, timestamp);
+        SetVariableValue(_remoteProgramStatusVariables?.LastProgramCommandTimestampUtc, timestamp, timestamp);
+        RefreshRemoteProgramStatus(_programExecutor.GetSnapshot());
+
+        _remoteProgramStatusVariables?.LastProgramCommandName.ClearChangeMasks(SystemContext, false);
+        _remoteProgramStatusVariables?.LastProgramCommandAccepted.ClearChangeMasks(SystemContext, false);
+        _remoteProgramStatusVariables?.LastProgramMessage.ClearChangeMasks(SystemContext, false);
+        _remoteProgramStatusVariables?.LastProgramCommandTimestampUtc.ClearChangeMasks(SystemContext, false);
+    }
+
+    private void RefreshRemoteProgramStatus(RobotProgramExecutionSnapshot snapshot)
+    {
+        DateTime timestamp = DateTime.UtcNow;
+
+        SetVariableValue(_remoteProgramStatusVariables?.CurrentProgramName, snapshot.CurrentProgramName ?? string.Empty, timestamp);
+        SetVariableValue(_remoteProgramStatusVariables?.ProgramExecutionState, snapshot.State.ToString(), timestamp);
+        SetVariableValue(_remoteProgramStatusVariables?.CurrentStepIndex, snapshot.CurrentStepIndex, timestamp);
+
+        if (!string.IsNullOrWhiteSpace(snapshot.LastErrorMessage))
+        {
+            SetVariableValue(_remoteProgramStatusVariables?.LastProgramMessage, snapshot.LastErrorMessage, timestamp);
+        }
+
+        _remoteProgramStatusVariables?.CurrentProgramName.ClearChangeMasks(SystemContext, false);
+        _remoteProgramStatusVariables?.ProgramExecutionState.ClearChangeMasks(SystemContext, false);
+        _remoteProgramStatusVariables?.CurrentStepIndex.ClearChangeMasks(SystemContext, false);
+        _remoteProgramStatusVariables?.LastProgramMessage.ClearChangeMasks(SystemContext, false);
+    }
+
     private static Argument CreateDoubleArgument(string name)
     {
         return new Argument
@@ -400,6 +676,44 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             ValueRank = ValueRanks.Scalar,
             Description = new LocalizedText(name)
         };
+    }
+
+    private static Argument CreateStringArgument(string name)
+    {
+        return new Argument
+        {
+            Name = name,
+            DataType = DataTypeIds.String,
+            ValueRank = ValueRanks.Scalar,
+            Description = new LocalizedText(name)
+        };
+    }
+
+    private static string NormalizeSampleProgramName(string sampleProgramName)
+    {
+        string trimmedName = sampleProgramName.Trim();
+        return trimmedName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+            ? trimmedName[..^".json".Length]
+            : trimmedName;
+    }
+
+    private static string? FindSampleProgramPath(string fileName)
+    {
+        string relativePath = Path.Combine("RobotPrograms", "SamplePrograms", fileName);
+        string[] candidatePaths =
+        [
+            Path.Combine(AppContext.BaseDirectory, relativePath),
+            Path.Combine(Directory.GetCurrentDirectory(), "src", "Robotics.ReferenceServer", relativePath),
+            Path.Combine(Directory.GetCurrentDirectory(), relativePath)
+        ];
+
+        return candidatePaths.FirstOrDefault(File.Exists);
+    }
+
+    private string GetProgramCommandRejectionMessage(string fallbackMessage)
+    {
+        string? lastErrorMessage = _programExecutor.LastErrorMessage;
+        return string.IsNullOrWhiteSpace(lastErrorMessage) ? fallbackMessage : lastErrorMessage;
     }
 
     private void SetStartupJointTarget()
@@ -428,8 +742,10 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             TimeSpan elapsed = now - _lastSimulationUpdateUtc;
             _lastSimulationUpdateUtc = now;
 
+            _programExecutor.Update(elapsed);
             _simulationService.Update(elapsed);
             RefreshTelemetryVariables(_simulationService.GetSnapshot());
+            RefreshRemoteProgramStatus(_programExecutor.GetSnapshot());
 
             foreach (BaseVariableState variable in _telemetryVariables)
             {
@@ -508,6 +824,15 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         BaseDataVariableState<bool> LastCommandAccepted,
         BaseDataVariableState<string> LastCommandMessage,
         BaseDataVariableState<DateTime> LastCommandTimestampUtc);
+
+    private sealed record RemoteProgramStatusVariableSet(
+        BaseDataVariableState<string> CurrentProgramName,
+        BaseDataVariableState<string> ProgramExecutionState,
+        BaseDataVariableState<int> CurrentStepIndex,
+        BaseDataVariableState<string> LastProgramCommandName,
+        BaseDataVariableState<bool> LastProgramCommandAccepted,
+        BaseDataVariableState<string> LastProgramMessage,
+        BaseDataVariableState<DateTime> LastProgramCommandTimestampUtc);
 
     private sealed record AxisVariableSet(
         BaseDataVariableState<double> PositionDegrees,
