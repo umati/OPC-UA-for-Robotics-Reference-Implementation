@@ -25,4 +25,9 @@ public sealed class RobotSimulationService
     {
         _robot.SetJointTargets(targets);
     }
+
+    public void StopMotion()
+    {
+        _robot.StopMotion();
+    }
 }

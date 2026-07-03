@@ -69,6 +69,14 @@ public sealed class SixAxisRobot
         }
     }
 
+    public void StopMotion()
+    {
+        foreach (AxisRuntimeState axis in _axes)
+        {
+            axis.TargetPositionDegrees = axis.PositionDegrees;
+        }
+    }
+
     public void Update(TimeSpan elapsed)
     {
         if (elapsed <= TimeSpan.Zero)

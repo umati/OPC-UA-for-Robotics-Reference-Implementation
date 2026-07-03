@@ -18,6 +18,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private BaseDataVariableState<double>? _speedVariable;
     private BaseDataVariableState<double>? _accelerationVariable;
     private PoseVariableSet? _poseVariables;
+    private RemoteControlStatusVariableSet? _remoteControlStatusVariables;
     private Timer? _simulationTimer;
     private DateTimeOffset _lastSimulationUpdateUtc = DateTimeOffset.UtcNow;
 
@@ -99,7 +100,38 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             CreateAxis(axes, axisName);
         }
 
+        CreateRemoteControl(robot);
+
         return robot;
+    }
+
+    private void CreateRemoteControl(NodeState robot)
+    {
+        var remoteControl = CreateFolder(robot, "Robots.SixAxisRobot.RemoteControl", "RemoteControl", ReferenceTypeIds.HasComponent);
+
+        _remoteControlStatusVariables = new RemoteControlStatusVariableSet(
+            CreateVariable(remoteControl, "Robots.SixAxisRobot.RemoteControl.LastCommandName", "LastCommandName", DataTypeIds.String, string.Empty),
+            CreateVariable(remoteControl, "Robots.SixAxisRobot.RemoteControl.LastCommandAccepted", "LastCommandAccepted", DataTypeIds.Boolean, false),
+            CreateVariable(remoteControl, "Robots.SixAxisRobot.RemoteControl.LastCommandMessage", "LastCommandMessage", DataTypeIds.String, "No command has been called."),
+            CreateVariable(remoteControl, "Robots.SixAxisRobot.RemoteControl.LastCommandTimestampUtc", "LastCommandTimestampUtc", DataTypeIds.DateTime, DateTime.MinValue));
+
+        CreateMethod(
+            remoteControl,
+            "Robots.SixAxisRobot.RemoteControl.MoveJoints",
+            "MoveJoints",
+            OnMoveJoints,
+            [
+                CreateDoubleArgument("STargetDegrees"),
+                CreateDoubleArgument("LTargetDegrees"),
+                CreateDoubleArgument("UTargetDegrees"),
+                CreateDoubleArgument("RTargetDegrees"),
+                CreateDoubleArgument("BTargetDegrees"),
+                CreateDoubleArgument("TTargetDegrees")
+            ]);
+
+        CreateMethod(remoteControl, "Robots.SixAxisRobot.RemoteControl.ResetToHome", "ResetToHome", OnResetToHome);
+        CreateMethod(remoteControl, "Robots.SixAxisRobot.RemoteControl.StartDemoMotion", "StartDemoMotion", OnStartDemoMotion);
+        CreateMethod(remoteControl, "Robots.SixAxisRobot.RemoteControl.StopMotion", "StopMotion", OnStopMotion);
     }
 
     private void CreateAxis(NodeState axesFolder, RobotAxisName axisName)
@@ -185,6 +217,189 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         parent.AddChild(variable);
         _telemetryVariables.Add(variable);
         return variable;
+    }
+
+    private MethodState CreateMethod(
+        NodeState parent,
+        string nodeId,
+        string browseName,
+        GenericMethodCalledEventHandler handler,
+        Argument[]? inputArguments = null)
+    {
+        var method = new MethodState(parent)
+        {
+            SymbolicName = browseName,
+            ReferenceTypeId = ReferenceTypeIds.HasComponent,
+            NodeId = new NodeId(nodeId, NamespaceIndex),
+            BrowseName = new QualifiedName(browseName, NamespaceIndex),
+            DisplayName = new LocalizedText(browseName),
+            WriteMask = AttributeWriteMask.None,
+            UserWriteMask = AttributeWriteMask.None,
+            Executable = true,
+            UserExecutable = true,
+            OnCallMethod = handler
+        };
+
+        if (inputArguments is not null)
+        {
+            method.InputArguments = new PropertyState<Argument[]>(method)
+            {
+                SymbolicName = BrowseNames.InputArguments,
+                ReferenceTypeId = ReferenceTypeIds.HasProperty,
+                TypeDefinitionId = VariableTypeIds.PropertyType,
+                NodeId = new NodeId($"{nodeId}.InputArguments", NamespaceIndex),
+                BrowseName = BrowseNames.InputArguments,
+                DisplayName = BrowseNames.InputArguments,
+                WriteMask = AttributeWriteMask.None,
+                UserWriteMask = AttributeWriteMask.None,
+                DataType = DataTypeIds.Argument,
+                ValueRank = ValueRanks.OneDimension,
+                AccessLevel = AccessLevels.CurrentRead,
+                UserAccessLevel = AccessLevels.CurrentRead,
+                Historizing = false,
+                Value = inputArguments,
+                StatusCode = StatusCodes.Good,
+                Timestamp = DateTime.UtcNow
+            };
+        }
+
+        parent.AddChild(method);
+        return method;
+    }
+
+    private ServiceResult OnMoveJoints(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (inputArguments.Count != 6)
+        {
+            lock (Lock)
+            {
+                UpdateRemoteControlStatus("MoveJoints", false, "MoveJoints requires six joint target inputs.");
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+
+        try
+        {
+            lock (Lock)
+            {
+                _simulationService.SetJointTargets(
+                [
+                    new RobotJointTarget { AxisName = RobotAxisName.S, TargetPositionDegrees = Convert.ToDouble(inputArguments[0]) },
+                    new RobotJointTarget { AxisName = RobotAxisName.L, TargetPositionDegrees = Convert.ToDouble(inputArguments[1]) },
+                    new RobotJointTarget { AxisName = RobotAxisName.U, TargetPositionDegrees = Convert.ToDouble(inputArguments[2]) },
+                    new RobotJointTarget { AxisName = RobotAxisName.R, TargetPositionDegrees = Convert.ToDouble(inputArguments[3]) },
+                    new RobotJointTarget { AxisName = RobotAxisName.B, TargetPositionDegrees = Convert.ToDouble(inputArguments[4]) },
+                    new RobotJointTarget { AxisName = RobotAxisName.T, TargetPositionDegrees = Convert.ToDouble(inputArguments[5]) }
+                ]);
+
+                UpdateRemoteControlStatus("MoveJoints", true, "Joint targets accepted.");
+            }
+
+            return ServiceResult.Good;
+        }
+        catch (Exception exception) when (exception is InvalidCastException or FormatException or OverflowException)
+        {
+            lock (Lock)
+            {
+                UpdateRemoteControlStatus("MoveJoints", false, "MoveJoints inputs must be double values.");
+            }
+
+            return StatusCodes.BadInvalidArgument;
+        }
+    }
+
+    private ServiceResult OnResetToHome(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        lock (Lock)
+        {
+            _simulationService.SetJointTargets(
+            [
+                new RobotJointTarget { AxisName = RobotAxisName.S, TargetPositionDegrees = 0 },
+                new RobotJointTarget { AxisName = RobotAxisName.L, TargetPositionDegrees = 0 },
+                new RobotJointTarget { AxisName = RobotAxisName.U, TargetPositionDegrees = 0 },
+                new RobotJointTarget { AxisName = RobotAxisName.R, TargetPositionDegrees = 0 },
+                new RobotJointTarget { AxisName = RobotAxisName.B, TargetPositionDegrees = 0 },
+                new RobotJointTarget { AxisName = RobotAxisName.T, TargetPositionDegrees = 0 }
+            ]);
+
+            UpdateRemoteControlStatus("ResetToHome", true, "Home joint targets accepted.");
+        }
+
+        return ServiceResult.Good;
+    }
+
+    private ServiceResult OnStartDemoMotion(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        lock (Lock)
+        {
+            _simulationService.SetJointTargets(
+            [
+                new RobotJointTarget { AxisName = RobotAxisName.S, TargetPositionDegrees = 45 },
+                new RobotJointTarget { AxisName = RobotAxisName.L, TargetPositionDegrees = -30 },
+                new RobotJointTarget { AxisName = RobotAxisName.U, TargetPositionDegrees = 60 },
+                new RobotJointTarget { AxisName = RobotAxisName.R, TargetPositionDegrees = 20 },
+                new RobotJointTarget { AxisName = RobotAxisName.B, TargetPositionDegrees = 15 },
+                new RobotJointTarget { AxisName = RobotAxisName.T, TargetPositionDegrees = 90 }
+            ]);
+
+            UpdateRemoteControlStatus("StartDemoMotion", true, "Demo joint targets accepted.");
+        }
+
+        return ServiceResult.Good;
+    }
+
+    private ServiceResult OnStopMotion(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        lock (Lock)
+        {
+            _simulationService.StopMotion();
+            UpdateRemoteControlStatus("StopMotion", true, "Stop motion accepted.");
+        }
+
+        return ServiceResult.Good;
+    }
+
+    private void UpdateRemoteControlStatus(string commandName, bool accepted, string message)
+    {
+        DateTime timestamp = DateTime.UtcNow;
+
+        SetVariableValue(_remoteControlStatusVariables?.LastCommandName, commandName, timestamp);
+        SetVariableValue(_remoteControlStatusVariables?.LastCommandAccepted, accepted, timestamp);
+        SetVariableValue(_remoteControlStatusVariables?.LastCommandMessage, message, timestamp);
+        SetVariableValue(_remoteControlStatusVariables?.LastCommandTimestampUtc, timestamp, timestamp);
+
+        _remoteControlStatusVariables?.LastCommandName.ClearChangeMasks(SystemContext, false);
+        _remoteControlStatusVariables?.LastCommandAccepted.ClearChangeMasks(SystemContext, false);
+        _remoteControlStatusVariables?.LastCommandMessage.ClearChangeMasks(SystemContext, false);
+        _remoteControlStatusVariables?.LastCommandTimestampUtc.ClearChangeMasks(SystemContext, false);
+    }
+
+    private static Argument CreateDoubleArgument(string name)
+    {
+        return new Argument
+        {
+            Name = name,
+            DataType = DataTypeIds.Double,
+            ValueRank = ValueRanks.Scalar,
+            Description = new LocalizedText(name)
+        };
     }
 
     private void SetStartupJointTarget()
@@ -287,6 +502,12 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         BaseDataVariableState<double> Rx,
         BaseDataVariableState<double> Ry,
         BaseDataVariableState<double> Rz);
+
+    private sealed record RemoteControlStatusVariableSet(
+        BaseDataVariableState<string> LastCommandName,
+        BaseDataVariableState<bool> LastCommandAccepted,
+        BaseDataVariableState<string> LastCommandMessage,
+        BaseDataVariableState<DateTime> LastCommandTimestampUtc);
 
     private sealed record AxisVariableSet(
         BaseDataVariableState<double> PositionDegrees,
