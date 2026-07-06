@@ -21,6 +21,7 @@
 - Bind simulation to MinimalRealistic instance nodes.
 - Address-space mode selection for Temporary, Official, and Both models.
 - Motion validation report mode.
+- Visualization V1: manual-slider browser viewer.
 
 ## Next
 
@@ -37,4 +38,4 @@
 - Expose asset management variables using the official information model.
 - Expose condition monitoring variables using the official information model.
 - Build client dashboard.
-- Build 3D visualization.
+- Extend 3D visualization with live telemetry and program overlays.
