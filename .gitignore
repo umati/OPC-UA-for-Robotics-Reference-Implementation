@@ -3,6 +3,10 @@ obj/
 .vs/
 
 # UA-ModelCompiler temporary output and logs.
+generated/modelcompiler-input/
+generated/opcua-di/**/*.log
+generated/opcua-di/**/*.tmp
+generated/opcua-di/**/*.bak
 generated/opcua-robotics/**/*.log
 generated/opcua-robotics/**/*.tmp
 generated/opcua-robotics/**/*.bak

@@ -4,7 +4,7 @@ This folder contains tooling for generating OPC UA Robotics model classes with t
 
 UA-ModelCompiler is maintained separately from the OPC UA .NET Standard runtime SDK. The runtime SDK hosts and serves OPC UA applications; UA-ModelCompiler consumes OPC UA model definitions and can generate .NET classes and constants from NodeSet files.
 
-We will use UA-ModelCompiler to generate .NET model code for OPC UA Robotics v1.02 from the official NodeSet XML files.
+We will use UA-ModelCompiler to generate .NET model code for OPC UA DI and OPC UA Robotics v1.02 from the official NodeSet XML files.
 
 Generated files should not be manually edited. Any required changes should be made by updating the source model inputs or the generation process, then regenerating the output.
 
@@ -23,7 +23,8 @@ Opc.Ua.ModelCompiler --help
 The generation script uses this command shape:
 
 ```powershell
-Opc.Ua.ModelCompiler compile -d2 <RoboticsNodeSet>,Opc.Ua.Robotics,Robotics -d2 <DiNodeSet>,Opc.Ua.DI,DI -o2 <GeneratedOutputFolder>
+Opc.Ua.ModelCompiler compile -d2 <DiNodeSet>,Opc.Ua.DI,DI -o2 <DiGeneratedOutputFolder>
+Opc.Ua.ModelCompiler compile -d2 <RoboticsNodeSet>,Opc.Ua.Robotics,Robotics -d2 <DiNodeSet>,Opc.Ua.DI,DI -o2 <RoboticsGeneratedOutputFolder>
 ```
 
 ## Inputs
@@ -46,13 +47,16 @@ The main NodeSets folder may also contain optional or future integration models,
 - `Opc.Ua.IA.NodeSet2.xml`
 - `Opc.Ua.Machinery.NodeSet2.xml`
 
-The current milestone generates only the OPC UA Robotics model with OPC UA DI as its dependency. The script therefore creates a clean temporary compiler input folder at:
+The current milestone generates OPC UA DI first, then OPC UA Robotics with OPC UA DI as its dependency. Robotics generated code references DI generated classes, including types such as `ComponentTypeState`, so the DI generated output must be available to the generated model project.
+
+The script creates clean temporary compiler input folders at:
 
 ```text
+generated/modelcompiler-input/di-core/
 generated/modelcompiler-input/robotics-core/
 ```
 
-Before each run, that folder is deleted and recreated. The script copies only `Opc.Ua.Di.NodeSet2.xml` and `Opc.Ua.Robotics.NodeSet2.xml` into it, then runs UA-ModelCompiler from that isolated input set. This prevents UA-ModelCompiler from scanning optional IA, Machinery, combined, or other NodeSet XML files that may be present in the source NodeSets folder.
+Before each run, those folders are deleted and recreated. The DI input folder receives only `Opc.Ua.Di.NodeSet2.xml`. The Robotics input folder receives only `Opc.Ua.Di.NodeSet2.xml` and `Opc.Ua.Robotics.NodeSet2.xml`. This prevents UA-ModelCompiler from scanning optional IA, Machinery, combined, or other NodeSet XML files that may be present in the source NodeSets folder.
 
 IA and Machinery are intentionally not included yet because they are future optional integration layers for this reference implementation, not part of the current Robotics-only generated model target.
 
@@ -61,18 +65,21 @@ IA and Machinery are intentionally not included yet because they are future opti
 The script writes generated files to:
 
 ```text
+generated/opcua-di/
 generated/opcua-robotics/
 ```
 
 The exact generated file names may depend on the installed UA-ModelCompiler version.
 
-Generated files should not be manually edited. Treat `generated/opcua-robotics/` as disposable output and make changes through the source NodeSets or generation script instead.
+Generated files should not be manually edited. Treat `generated/opcua-di/` and `generated/opcua-robotics/` as disposable output and make changes through the source NodeSets or generation script instead.
 
 The generated files are linked into a separate class library project:
 
 ```text
 src/Robotics.OpcUa.RoboticsModel.Generated/
 ```
+
+The generated project intentionally includes both DI and Robotics generated code for now because Robotics generated classes depend on DI generated classes.
 
 Do not copy generated files into hand-written server projects. Keep generated model code isolated so it can be regenerated cleanly.
 
@@ -84,4 +91,4 @@ From the repository root:
 .\tools\modelcompiler\generate-robotics-model.ps1
 ```
 
-The script validates the required NodeSet XML files, stages the isolated Robotics + DI compiler input folder, creates the output folder, and runs UA-ModelCompiler. It only generates model code; it does not load NodeSets into the running server.
+The script validates the required NodeSet XML files, stages isolated DI and Robotics compiler input folders, creates both output folders, and runs UA-ModelCompiler. It only generates model code; it does not load NodeSets into the running server.

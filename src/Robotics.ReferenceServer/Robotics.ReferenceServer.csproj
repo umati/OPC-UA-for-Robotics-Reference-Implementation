@@ -4,6 +4,7 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.378.145" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.5.378.145" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.5.378.145" />
+    <ProjectReference Include="..\Robotics.OpcUa.RoboticsModel.Generated\Robotics.OpcUa.RoboticsModel.Generated.csproj" />
     <ProjectReference Include="..\Robotics.Shared\Robotics.Shared.csproj" />
   </ItemGroup>
 

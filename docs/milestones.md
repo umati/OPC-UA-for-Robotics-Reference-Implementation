@@ -10,8 +10,10 @@
 - RemotePrograms method exposure.
 - UA-ModelCompiler generation script.
 - Installed or built UA-ModelCompiler.
+- Generated DI model classes.
 - Generated Robotics model classes.
 - Generated Robotics model project.
+- Reference server prepared to consume generated model.
 
 ## Next
 
