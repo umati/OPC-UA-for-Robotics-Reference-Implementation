@@ -19,10 +19,10 @@
 - Official DI and Robotics type NodeSets loaded.
 - MinimalRealistic instance NodeSet loaded.
 - Bind simulation to MinimalRealistic instance nodes.
+- Address-space mode selection for Temporary, Official, and Both models.
 
 ## Next
 
-- Add robot model variant selection.
 - Add RichReference instance NodeSet.
 - Map temporary demo nodes to official Robotics concepts.
 - Instantiate official Robotics model objects.
@@ -30,6 +30,7 @@
 
 ## Later
 
+- Map RemoteControl and RemotePrograms behavior to official Robotics TaskControl concepts.
 - Add negative conformance test target NodeSets.
 - Build conformance unit testing client/tool.
 - Expose asset management variables using the official information model.

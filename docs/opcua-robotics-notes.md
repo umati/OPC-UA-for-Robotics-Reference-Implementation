@@ -46,9 +46,9 @@ The current generated model target is OPC UA Robotics. OPC UA DI is included as 
 
 Generated files are linked into `src/Robotics.OpcUa.RoboticsModel.Generated/` so generated model code remains separate from hand-written server code. The generated project intentionally includes both DI and Robotics generated code for now.
 
-The generated Robotics model code is now isolated in its own project and the reference server references that project as preparation for official Robotics model instantiation. The server now exposes the temporary demo address space, loads the official DI/Robotics type NodeSets plus the MinimalRealistic instance NodeSet, and binds selected imported instance variables to simulation values. It does not instantiate official Robotics objects programmatically yet.
+The generated Robotics model code is now isolated in its own project and the reference server references that project as preparation for official Robotics model instantiation. The server can expose the temporary demo address space, the official DI/Robotics type NodeSets plus the MinimalRealistic instance NodeSet, or both through runtime model mode selection. It binds selected imported instance variables to simulation values. It does not instantiate official Robotics objects programmatically yet.
 
-The current temporary demo nodes will later be mapped to the generated Robotics types so the server can instantiate the official Robotics model objects.
+Model mode selection allows migration from temporary demo nodes to official instance nodes without breaking existing clients during the transition. The current temporary demo nodes will later be mapped to the generated Robotics types so the server can instantiate the official Robotics model objects.
 
 ## Instance NodeSet Strategy
 

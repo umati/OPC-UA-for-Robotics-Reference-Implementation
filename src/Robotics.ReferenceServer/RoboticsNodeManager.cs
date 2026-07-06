@@ -21,6 +21,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private readonly RobotSimulationService _simulationService;
     private readonly RobotProgramExecutor _programExecutor;
     private readonly RobotNodeBinder _robotNodeBinder = new();
+    private readonly RobotAddressSpaceMode _addressSpaceMode;
     private readonly List<BaseVariableState> _telemetryVariables = [];
     private readonly Dictionary<RobotAxisName, AxisVariableSet> _axisVariables = [];
 
@@ -34,7 +35,10 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private Timer? _simulationTimer;
     private DateTimeOffset _lastSimulationUpdateUtc = DateTimeOffset.UtcNow;
 
-    public RoboticsNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+    public RoboticsNodeManager(
+        IServerInternal server,
+        ApplicationConfiguration configuration,
+        RobotAddressSpaceMode addressSpaceMode = RobotAddressSpaceMode.Both)
         : base(
             server,
             configuration,
@@ -43,6 +47,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             NodeSetLoader.RoboticsNamespaceUri,
             NodeSetLoader.InstanceNamespaceUri)
     {
+        _addressSpaceMode = addressSpaceMode;
         _simulationService = new RobotSimulationService();
         _programExecutor = new RobotProgramExecutor(_simulationService);
         SystemContext.NodeIdFactory = this;
@@ -50,18 +55,31 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
 
     public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
     {
-        // The imported MinimalRealistic instance NodeSet is the first official Robotics model variant.
-        // Selected imported variables are bound to simulation values below; richer binding remains a later milestone.
-        NodeStateCollection importedRoboticsNodes = NodeSetLoader.LoadRequiredNodeSets(SystemContext);
-        AddImportedRoboticsNodes(importedRoboticsNodes, externalReferences);
+        if (_addressSpaceMode is RobotAddressSpaceMode.Official or RobotAddressSpaceMode.Both)
+        {
+            // The imported MinimalRealistic instance NodeSet is the first official Robotics model variant.
+            // Selected imported variables are bound to simulation values below; richer binding remains a later milestone.
+            NodeStateCollection importedRoboticsNodes = NodeSetLoader.LoadRequiredNodeSets(SystemContext);
+            AddImportedRoboticsNodes(importedRoboticsNodes, externalReferences);
+        }
 
-        // Keep the temporary demo nodes during migration so existing telemetry and methods remain available.
-        var robotsFolder = CreateRobotsFolder();
-        var robot = CreateSixAxisRobot(robotsFolder);
+        if (_addressSpaceMode is RobotAddressSpaceMode.Temporary or RobotAddressSpaceMode.Both)
+        {
+            // Keep the temporary demo nodes during migration so existing telemetry and methods remain available.
+            var robotsFolder = CreateRobotsFolder();
+            CreateSixAxisRobot(robotsFolder);
+
+            AddPredefinedNode(SystemContext, robotsFolder);
+            AddObjectsFolderReference(externalReferences, robotsFolder.NodeId);
+        }
+        else
+        {
+            // The temporary RemoteControl/RemotePrograms methods are not recreated on official TaskControl nodes yet.
+            Console.WriteLine(
+                "RemoteControl and RemotePrograms are available only in Temporary/Both mode until official Robotics remote-operation mapping is implemented.");
+        }
 
         RefreshTelemetryVariables(_simulationService.GetSnapshot());
-        AddPredefinedNode(SystemContext, robotsFolder);
-        AddObjectsFolderReference(externalReferences, robotsFolder.NodeId);
         SetStartupJointTarget();
         StartSimulationUpdates();
     }
@@ -98,7 +116,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         catch (Exception exception)
         {
             Console.WriteLine(
-                $"Warning: MinimalRealistic binding failed and will be skipped. The server will keep running with the temporary demo nodes active. {exception.Message}");
+                $"Warning: MinimalRealistic binding failed and will be skipped. {GetBindingFallbackMessage()} {exception.Message}");
             _importedRobotNodeHandles = null;
             return;
         }
@@ -116,8 +134,15 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         if (handles.BoundNodeCount < 10)
         {
             Console.WriteLine(
-                "Warning: MinimalRealistic binding found too few nodes to be useful. The server will keep running with the temporary demo nodes active.");
+                $"Warning: MinimalRealistic binding found too few nodes to be useful. {GetBindingFallbackMessage()}");
         }
+    }
+
+    private string GetBindingFallbackMessage()
+    {
+        return _addressSpaceMode is RobotAddressSpaceMode.Temporary or RobotAddressSpaceMode.Both
+            ? "The server will keep running with the temporary demo nodes active."
+            : "The server will keep running without official simulation value bindings.";
     }
 
     protected override void Dispose(bool disposing)

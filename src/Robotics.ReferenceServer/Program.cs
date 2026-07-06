@@ -1,5 +1,6 @@
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using Robotics.ReferenceServer.InformationModel;
 using Robotics.ReferenceServer.Simulation;
 using Robotics.Shared;
 
@@ -11,6 +12,11 @@ internal static class Program
 
     public static async Task Main(string[] args)
     {
+        if (!TryParseAddressSpaceMode(args, out RobotAddressSpaceMode addressSpaceMode))
+        {
+            return;
+        }
+
         if (args.Contains("--simulate-once", StringComparer.OrdinalIgnoreCase))
         {
             RunSimulationSmokeTest();
@@ -38,7 +44,9 @@ internal static class Program
                 silent: false,
                 lifeTimeInMonths: 120);
 
-            await application.StartAsync(new RoboticsServer());
+            Console.WriteLine($"Selected address-space mode: {addressSpaceMode}");
+
+            await application.StartAsync(new RoboticsServer(addressSpaceMode));
 
             Console.WriteLine("Robotics reference server started.");
             Console.WriteLine($"Endpoint: {EndpointUrl}");
@@ -56,6 +64,62 @@ internal static class Program
             Console.WriteLine("Press Enter to exit.");
             Console.ReadLine();
         }
+    }
+
+    private static bool TryParseAddressSpaceMode(string[] args, out RobotAddressSpaceMode addressSpaceMode)
+    {
+        addressSpaceMode = RobotAddressSpaceMode.Both;
+
+        for (int index = 0; index < args.Length; index++)
+        {
+            string argument = args[index];
+            string? value = null;
+
+            if (argument.Equals("--model", StringComparison.OrdinalIgnoreCase))
+            {
+                if (index + 1 >= args.Length || args[index + 1].StartsWith("--", StringComparison.Ordinal))
+                {
+                    PrintInvalidModelValue("missing");
+                    return false;
+                }
+
+                value = args[++index];
+            }
+            else if (argument.StartsWith("--model=", StringComparison.OrdinalIgnoreCase))
+            {
+                value = argument["--model=".Length..];
+            }
+
+            if (value is null)
+            {
+                continue;
+            }
+
+            if (TryParseModelValue(value, out addressSpaceMode))
+            {
+                continue;
+            }
+
+            PrintInvalidModelValue(value);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryParseModelValue(string value, out RobotAddressSpaceMode addressSpaceMode)
+    {
+        return Enum.TryParse(value.Trim(), ignoreCase: true, out addressSpaceMode)
+            && Enum.IsDefined(addressSpaceMode)
+            && !int.TryParse(value, out _);
+    }
+
+    private static void PrintInvalidModelValue(string value)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Invalid --model value: {value}");
+        Console.ResetColor();
+        Console.WriteLine("Valid values are: temporary, official, both.");
     }
 
     private static void RunSimulationSmokeTest()
