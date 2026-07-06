@@ -1,21 +1,26 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import './style.css';
+import { createToolFrame, createWorldFrame } from './frameHelpers';
+import { PathTrail } from './pathTrail';
 import { createRobotModel, resetHome, setJointAngles } from './robotModel';
+import { createStatusOverlay } from './statusOverlay';
 import { getAxisPositions, getAxisVelocities, RobotTelemetryClient, type RobotTelemetryData } from './telemetryClient';
 import { createRobotUi } from './ui';
-import { homeJointAngles, type JointAngles, type JointName, type UiController } from './types';
+import { homeJointAngles, type JointAngles, type JointName, type TelemetryHeartbeat, type UiController, type VisualizationOptions } from './types';
 
 // The browser renders telemetry only. Robot simulation and program execution stay server-owned.
 
 const sceneHost = requiredElement<HTMLDivElement>('scene');
 const controlsHost = requiredElement<HTMLElement>('controls');
+const statusOverlay = createStatusOverlay(sceneHost);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x090d13);
+scene.background = new THREE.Color(0x070b10);
+scene.fog = new THREE.Fog(0x070b10, 7, 12);
 
 const camera = new THREE.PerspectiveCamera(45, sceneHost.clientWidth / sceneHost.clientHeight, 0.1, 100);
-camera.position.set(3.8, 2.9, 4.3);
+camera.position.set(4.8, 3.35, 4.9);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -26,38 +31,41 @@ sceneHost.append(renderer.domElement);
 
 const orbitControls = new OrbitControls(camera, renderer.domElement);
 orbitControls.enableDamping = true;
-orbitControls.target.set(0.7, 1.25, 0);
+orbitControls.target.set(0.75, 1.12, 0.05);
 orbitControls.maxPolarAngle = Math.PI * 0.48;
-orbitControls.minDistance = 2;
-orbitControls.maxDistance = 8;
+orbitControls.minDistance = 2.2;
+orbitControls.maxDistance = 9;
 orbitControls.update();
 
-const grid = new THREE.GridHelper(7, 28, 0x2f8cff, 0x25313d);
+const grid = new THREE.GridHelper(8, 32, 0x4c8ed9, 0x263341);
 const gridMaterial = grid.material as THREE.Material;
 gridMaterial.transparent = true;
-gridMaterial.opacity = 0.42;
+gridMaterial.opacity = 0.34;
 scene.add(grid);
 
-const axes = new THREE.AxesHelper(1.25);
-axes.position.set(-2.7, 0.02, -2.7);
-scene.add(axes);
+const worldFrame = createWorldFrame();
+scene.add(worldFrame);
 
-const ambientLight = new THREE.HemisphereLight(0xe8f4ff, 0x15191f, 1.9);
+const ambientLight = new THREE.HemisphereLight(0xe8f4ff, 0x111820, 1.65);
 scene.add(ambientLight);
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
-keyLight.position.set(3.6, 5.2, 2.4);
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.65);
+keyLight.position.set(4.4, 5.8, 3.1);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x6aa8ff, 0.9);
-fillLight.position.set(-3.2, 2.1, -3.4);
+const fillLight = new THREE.DirectionalLight(0x7fb4ff, 0.95);
+fillLight.position.set(-3.5, 2.4, -3.7);
 scene.add(fillLight);
 
+const rimLight = new THREE.DirectionalLight(0x7cffd4, 0.52);
+rimLight.position.set(-1.8, 3.8, 3.6);
+scene.add(rimLight);
+
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(7, 7),
-  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.28 }),
+  new THREE.PlaneGeometry(8, 8),
+  new THREE.MeshStandardMaterial({ color: 0x0b1118, roughness: 0.86, metalness: 0.08 }),
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
@@ -66,28 +74,40 @@ scene.add(floor);
 const robot = createRobotModel();
 scene.add(robot.root);
 
+const toolFrame = createToolFrame();
+robot.toolGroup.add(toolFrame);
+
+const pathTrail = new PathTrail({ maxPoints: 1000, minDistance: 0.012 });
+scene.add(pathTrail.line);
+
 let jointAngles: JointAngles = { ...homeJointAngles };
 let demoRunning = false;
 let demoStartMs = 0;
 let ui: UiController;
 let liveTelemetryActive = false;
+let lastTelemetryReceivedMs: number | null = null;
+let heartbeat: TelemetryHeartbeat = 'disconnected';
+const toolWorldPosition = new THREE.Vector3();
 
 const telemetryClient = new RobotTelemetryClient({
   onStatusChange(status, detail): void {
     ui.setConnectionStatus(status, detail);
+    statusOverlay.setConnectionStatus(status, detail);
 
     if (status === 'connected') {
       liveTelemetryActive = true;
       stopDemo();
-      ui.setMode('liveTelemetry');
-      ui.setManualControlsEnabled(false);
+      setVisualizationMode('liveTelemetry');
+      ui.setManualControlState(false, 'liveTelemetry');
       return;
     }
 
     if (status === 'disconnected' || status === 'error') {
       liveTelemetryActive = false;
-      ui.setManualControlsEnabled(true);
-      ui.setMode(demoRunning ? 'localDemo' : 'manual');
+      lastTelemetryReceivedMs = null;
+      updateTelemetryHealth(performance.now());
+      ui.setManualControlState(true, 'manual');
+      setVisualizationMode(demoRunning ? 'localDemo' : 'manual');
     }
   },
   onTelemetry(message): void {
@@ -106,8 +126,10 @@ ui = createRobotUi({
     stopDemo();
     jointAngles = { ...jointAngles, [jointName]: value };
     setJointAngles(robot, jointAngles);
+    addToolPathPoint();
     ui.setAngles(jointAngles);
-    ui.setMode('manual');
+    setVisualizationMode('manual');
+    ui.setManualControlState(true, 'manual');
   },
   onResetHome(): void {
     if (liveTelemetryActive) {
@@ -116,9 +138,11 @@ ui = createRobotUi({
 
     stopDemo();
     jointAngles = resetHome(robot);
+    addToolPathPoint();
     ui.setAngles(jointAngles);
     ui.setVelocities({});
-    ui.setMode('manual');
+    setVisualizationMode('manual');
+    ui.setManualControlState(true, 'manual');
   },
   onDemoStart(): void {
     if (liveTelemetryActive) {
@@ -127,21 +151,35 @@ ui = createRobotUi({
 
     demoRunning = true;
     demoStartMs = performance.now();
-    ui.setMode('localDemo');
+    setVisualizationMode('localDemo');
+    ui.setManualControlState(false, 'localDemo');
   },
   onDemoStop(): void {
     stopDemo();
   },
   onTelemetryConnect(url: string): void {
     stopDemo();
-    ui.setMode('liveTelemetry');
-    ui.setManualControlsEnabled(false);
+    setVisualizationMode('liveTelemetry');
+    ui.setManualControlState(false, 'liveTelemetry');
     telemetryClient.connect(url);
   },
   onTelemetryDisconnect(): void {
     telemetryClient.disconnect();
   },
+  onClearPath(): void {
+    pathTrail.clear();
+  },
+  onVisualizationOptionChange(options: VisualizationOptions): void {
+    worldFrame.visible = options.showWorldFrame;
+    toolFrame.visible = options.showToolFrame;
+    grid.visible = options.showGrid;
+    pathTrail.setVisible(options.showPathTrail);
+  },
 });
+
+ui.setManualControlState(true, 'manual');
+ui.setTelemetryHealth('disconnected', null);
+statusOverlay.setTelemetryHealth('disconnected', null);
 
 window.addEventListener('resize', resizeRenderer);
 resizeRenderer();
@@ -152,8 +190,14 @@ function render(nowMs: number): void {
     jointAngles = demoAngles((nowMs - demoStartMs) / 1000);
     setJointAngles(robot, jointAngles);
     ui.setAngles(jointAngles);
+    addToolPathPoint();
   }
 
+  if (liveTelemetryActive) {
+    addToolPathPoint();
+  }
+
+  updateTelemetryHealth(nowMs);
   orbitControls.update();
   renderer.render(scene, camera);
 }
@@ -166,11 +210,13 @@ function stopDemo(): void {
   demoRunning = false;
 
   if (!liveTelemetryActive) {
-    ui.setMode('manual');
+    setVisualizationMode('manual');
+    ui.setManualControlState(true, 'manual');
   }
 }
 
 function applyLiveTelemetry(message: RobotTelemetryData): void {
+  lastTelemetryReceivedMs = performance.now();
   const telemetryAngles = getAxisPositions(message);
   const updatedJointAngles = { ...jointAngles };
   let hasValidPosition = false;
@@ -189,16 +235,49 @@ function applyLiveTelemetry(message: RobotTelemetryData): void {
     jointAngles = updatedJointAngles;
     setJointAngles(robot, jointAngles);
     ui.setAngles(jointAngles);
+    addToolPathPoint();
   }
 
   ui.setVelocities(getAxisVelocities(message));
-  ui.setTelemetryDetails({
+  const telemetryDetails = {
     timestampUtc: message.timestampUtc,
     currentProgramName: message.currentProgramName,
     programExecutionState: message.programExecutionState,
     currentStepIndex: message.currentStepIndex,
     isMoving: message.isMoving,
-  });
+  };
+  ui.setTelemetryDetails(telemetryDetails);
+  statusOverlay.setTelemetryDetails(telemetryDetails);
+}
+
+function addToolPathPoint(): void {
+  robot.toolGroup.getWorldPosition(toolWorldPosition);
+  pathTrail.addPoint(toolWorldPosition);
+}
+
+function updateTelemetryHealth(nowMs: number): void {
+  let nextHeartbeat: TelemetryHeartbeat;
+  let ageMs: number | null = null;
+
+  if (!liveTelemetryActive || !telemetryClient.isConnected) {
+    nextHeartbeat = 'disconnected';
+  } else if (lastTelemetryReceivedMs === null) {
+    nextHeartbeat = 'stale';
+  } else {
+    ageMs = nowMs - lastTelemetryReceivedMs;
+    nextHeartbeat = ageMs <= 1000 ? 'live' : 'stale';
+  }
+
+  if (nextHeartbeat !== heartbeat || ageMs !== null) {
+    heartbeat = nextHeartbeat;
+    ui.setTelemetryHealth(nextHeartbeat, ageMs);
+    statusOverlay.setTelemetryHealth(nextHeartbeat, ageMs);
+  }
+}
+
+function setVisualizationMode(mode: 'manual' | 'localDemo' | 'liveTelemetry'): void {
+  ui.setMode(mode);
+  statusOverlay.setMode(mode);
 }
 
 function demoAngles(seconds: number): JointAngles {

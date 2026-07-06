@@ -4,8 +4,11 @@ import {
   type JointAngles,
   type JointName,
   type JointVelocities,
+  type ManualControlReason,
+  type TelemetryHeartbeat,
   type TelemetryConnectionStatus,
   type UiController,
+  type VisualizationOptions,
   type VisualizationMode,
 } from './types';
 import { defaultTelemetryUrl } from './telemetryClient';
@@ -19,12 +22,20 @@ interface UiOptions {
   onDemoStop: () => void;
   onTelemetryConnect: (url: string) => void;
   onTelemetryDisconnect: () => void;
+  onClearPath: () => void;
+  onVisualizationOptionChange: (options: VisualizationOptions) => void;
 }
 
 export function createRobotUi(options: UiOptions): UiController {
   const sliderInputs = new Map<JointName, HTMLInputElement>();
   const valueOutputs = new Map<JointName, HTMLOutputElement>();
   const velocityOutputs = new Map<JointName, HTMLElement>();
+  const visualizationOptions: VisualizationOptions = {
+    showWorldFrame: true,
+    showToolFrame: true,
+    showGrid: true,
+    showPathTrail: true,
+  };
 
   options.container.innerHTML = '';
 
@@ -33,7 +44,7 @@ export function createRobotUi(options: UiOptions): UiController {
   header.innerHTML = `
     <div>
       <p class="eyebrow">OPC UA Robotics</p>
-      <h1>Visualization V2</h1>
+      <h1>Visualization V3</h1>
     </div>
     <span class="status-pill" data-mode-status>Manual Mode</span>
   `;
@@ -90,6 +101,26 @@ export function createRobotUi(options: UiOptions): UiController {
   actions.append(resetButton, demoButton, stopButton);
   options.container.append(actions);
 
+  const viewSection = document.createElement('section');
+  viewSection.className = 'view-section';
+  viewSection.setAttribute('aria-label', 'Visualization display options');
+  viewSection.innerHTML = '<h2>View</h2>';
+
+  const toggles = document.createElement('div');
+  toggles.className = 'toggle-grid';
+  toggles.append(
+    checkbox('World frame', visualizationOptions.showWorldFrame, (value) => updateOption('showWorldFrame', value)),
+    checkbox('Tool frame', visualizationOptions.showToolFrame, (value) => updateOption('showToolFrame', value)),
+    checkbox('Grid', visualizationOptions.showGrid, (value) => updateOption('showGrid', value)),
+    checkbox('Path trail', visualizationOptions.showPathTrail, (value) => updateOption('showPathTrail', value)),
+  );
+
+  const clearPathButton = button('Clear Path', 'secondary');
+  clearPathButton.addEventListener('click', options.onClearPath);
+
+  viewSection.append(toggles, clearPathButton);
+  options.container.append(viewSection);
+
   const sliderSection = document.createElement('section');
   sliderSection.className = 'control-section';
   sliderSection.setAttribute('aria-label', 'Manual joint sliders');
@@ -138,8 +169,22 @@ export function createRobotUi(options: UiOptions): UiController {
 
   const telemetry = document.createElement('section');
   telemetry.className = 'telemetry-panel';
-  telemetry.setAttribute('aria-label', 'Current telemetry values');
-  telemetry.innerHTML = '<h2>Telemetry</h2>';
+  telemetry.setAttribute('aria-label', 'Current telemetry status and values');
+  telemetry.innerHTML = '<h2>Status</h2>';
+
+  const statusGrid = document.createElement('dl');
+  statusGrid.className = 'status-grid';
+  statusGrid.innerHTML = `
+    <div><dt>Mode</dt><dd data-status-mode>Manual Mode</dd></div>
+    <div><dt>Connection</dt><dd data-status-connection>disconnected</dd></div>
+    <div><dt>Heartbeat</dt><dd data-status-heartbeat>Disconnected</dd></div>
+    <div><dt>Telemetry age</dt><dd data-status-age>-</dd></div>
+  `;
+  telemetry.append(statusGrid);
+
+  const telemetryHeading = document.createElement('h2');
+  telemetryHeading.textContent = 'Joints';
+  telemetry.append(telemetryHeading);
 
   const telemetryGrid = document.createElement('dl');
   telemetryGrid.className = 'telemetry-grid';
@@ -181,7 +226,19 @@ export function createRobotUi(options: UiOptions): UiController {
   telemetry.append(programGrid);
   options.container.append(telemetry);
 
+  const note = document.createElement('section');
+  note.className = 'note-panel';
+  note.innerHTML = `
+    <p>V3 still uses a primitive placeholder robot.</p>
+    <p>Live physics comes from server telemetry; in Live Telemetry Mode the browser is only a renderer.</p>
+  `;
+  options.container.append(note);
+
   const modeStatus = options.container.querySelector<HTMLElement>('[data-mode-status]');
+  const statusMode = options.container.querySelector<HTMLElement>('[data-status-mode]');
+  const statusConnection = options.container.querySelector<HTMLElement>('[data-status-connection]');
+  const statusHeartbeat = options.container.querySelector<HTMLElement>('[data-status-heartbeat]');
+  const statusAge = options.container.querySelector<HTMLElement>('[data-status-age]');
   const programName = options.container.querySelector<HTMLElement>('[data-program-name]');
   const programState = options.container.querySelector<HTMLElement>('[data-program-state]');
   const programStep = options.container.querySelector<HTMLElement>('[data-program-step]');
@@ -225,26 +282,44 @@ export function createRobotUi(options: UiOptions): UiController {
       modeStatus.textContent = modeLabels[mode];
       modeStatus.classList.toggle('is-running', mode === 'localDemo');
       modeStatus.classList.toggle('is-live', mode === 'liveTelemetry');
+
+      if (statusMode) {
+        statusMode.textContent = modeLabels[mode];
+      }
     },
     setConnectionStatus(status: TelemetryConnectionStatus, detail?: string): void {
       connectionStatus.textContent = detail ? `${status}: ${detail}` : status;
       connectionStatus.dataset.status = status;
+      if (statusConnection) {
+        statusConnection.textContent = detail ? `${status}: ${detail}` : status;
+        statusConnection.dataset.status = status;
+      }
       connectButton.disabled = status === 'connecting' || status === 'connected';
       disconnectButton.disabled = status !== 'connecting' && status !== 'connected';
       urlInput.disabled = status === 'connecting' || status === 'connected';
     },
-    setManualControlsEnabled(isEnabled: boolean): void {
+    setManualControlState(isEnabled: boolean, reason: ManualControlReason): void {
       for (const slider of sliderInputs.values()) {
         slider.disabled = !isEnabled;
       }
 
       resetButton.disabled = !isEnabled;
       demoButton.disabled = !isEnabled;
-      stopButton.disabled = !isEnabled;
+      stopButton.disabled = reason !== 'localDemo';
       manualStatus.textContent = isEnabled
         ? 'Manual joint controls'
-        : 'Manual controls overridden by live telemetry';
+        : manualStatusLabels[reason];
       sliderSection.classList.toggle('is-disabled', !isEnabled);
+    },
+    setTelemetryHealth(heartbeat: TelemetryHeartbeat, ageMs: number | null): void {
+      if (statusHeartbeat) {
+        statusHeartbeat.textContent = heartbeatLabels[heartbeat];
+        statusHeartbeat.dataset.heartbeat = heartbeat;
+      }
+
+      if (statusAge) {
+        statusAge.textContent = ageMs === null ? '-' : `${Math.max(0, Math.round(ageMs))} ms`;
+      }
     },
     setTelemetryDetails(details): void {
       if (programName) {
@@ -270,6 +345,11 @@ export function createRobotUi(options: UiOptions): UiController {
       }
     },
   };
+
+  function updateOption(key: keyof VisualizationOptions, value: boolean): void {
+    visualizationOptions[key] = value;
+    options.onVisualizationOptionChange({ ...visualizationOptions });
+  }
 }
 
 const modeLabels: Record<VisualizationMode, string> = {
@@ -278,12 +358,40 @@ const modeLabels: Record<VisualizationMode, string> = {
   liveTelemetry: 'Live Telemetry Mode',
 };
 
+const manualStatusLabels: Record<ManualControlReason, string> = {
+  manual: 'Manual joint controls',
+  localDemo: 'Sliders follow Local Demo animation',
+  liveTelemetry: 'Sliders follow live telemetry',
+};
+
+const heartbeatLabels: Record<TelemetryHeartbeat, string> = {
+  live: 'Live',
+  stale: 'Stale',
+  disconnected: 'Disconnected',
+};
+
 function button(label: string, variant: 'primary' | 'secondary'): HTMLButtonElement {
   const element = document.createElement('button');
   element.type = 'button';
   element.className = `button ${variant}`;
   element.textContent = label;
   return element;
+}
+
+function checkbox(label: string, checked: boolean, onChange: (value: boolean) => void): HTMLLabelElement {
+  const row = document.createElement('label');
+  row.className = 'toggle-row';
+
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  input.addEventListener('change', () => onChange(input.checked));
+
+  const text = document.createElement('span');
+  text.textContent = label;
+
+  row.append(input, text);
+  return row;
 }
 
 function formatDegrees(value: number): string {

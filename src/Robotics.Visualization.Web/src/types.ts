@@ -12,6 +12,17 @@ export type VisualizationMode = 'manual' | 'localDemo' | 'liveTelemetry';
 
 export type TelemetryConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+export interface VisualizationOptions {
+  showWorldFrame: boolean;
+  showToolFrame: boolean;
+  showGrid: boolean;
+  showPathTrail: boolean;
+}
+
+export type ManualControlReason = 'manual' | 'localDemo' | 'liveTelemetry';
+
+export type TelemetryHeartbeat = 'live' | 'stale' | 'disconnected';
+
 export interface JointLimit {
   min: number;
   max: number;
@@ -46,7 +57,8 @@ export interface UiController {
   setVelocities: (velocities: JointVelocities) => void;
   setMode: (mode: VisualizationMode) => void;
   setConnectionStatus: (status: TelemetryConnectionStatus, detail?: string) => void;
-  setManualControlsEnabled: (isEnabled: boolean) => void;
+  setManualControlState: (isEnabled: boolean, reason: ManualControlReason) => void;
+  setTelemetryHealth: (heartbeat: TelemetryHeartbeat, ageMs: number | null) => void;
   setTelemetryDetails: (details: {
     timestampUtc?: string;
     currentProgramName?: string | null;

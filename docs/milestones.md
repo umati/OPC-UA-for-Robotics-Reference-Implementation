@@ -23,6 +23,7 @@
 - Motion validation report mode.
 - Visualization V1: manual-slider browser viewer.
 - Visualization V2: live telemetry WebSocket connection.
+- Visualization V3: path trail, coordinate frames, polished live overlay.
 
 ## Next
 
@@ -39,4 +40,5 @@
 - Expose asset management variables using the official information model.
 - Expose condition monitoring variables using the official information model.
 - Build client dashboard.
-- Extend 3D visualization with path curves, target frames, ghost pose, and program overlays.
+- Replace primitive visualization robot with a segmented GLB model.
+- Extend 3D visualization with target frames, ghost pose, and program overlays.
