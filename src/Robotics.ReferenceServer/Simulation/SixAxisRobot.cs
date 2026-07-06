@@ -11,6 +11,7 @@ public sealed class SixAxisRobot
 
     private const double AmbientTemperatureCelsius = 24.0;
     private const double PositionToleranceDegrees = 0.01;
+    private const double FinalSnapPositionToleranceDegrees = 0.25;
     private const double VelocityToleranceDegreesPerSecond = 0.05;
     private const double MaxIntegrationStepSeconds = 0.02;
 
@@ -110,10 +111,14 @@ public sealed class SixAxisRobot
         if (Math.Abs(distanceToTarget) <= PositionToleranceDegrees
             && Math.Abs(axis.VelocityDegreesPerSecond) <= VelocityToleranceDegreesPerSecond)
         {
-            axis.PositionDegrees = axis.TargetPositionDegrees;
-            axis.VelocityDegreesPerSecond = 0;
-            axis.LastAccelerationDegreesPerSecondSquared = 0;
-            UpdateThermalState(axis, elapsedSeconds, 0);
+            SettleAxis(axis, elapsedSeconds, 0);
+            return;
+        }
+
+        if (CanSettleWithinStep(axis, distanceToTarget, elapsedSeconds))
+        {
+            double finalAcceleration = -axis.VelocityDegreesPerSecond / elapsedSeconds;
+            SettleAxis(axis, elapsedSeconds, finalAcceleration);
             return;
         }
 
@@ -176,6 +181,26 @@ public sealed class SixAxisRobot
     private static bool WouldCrossTarget(double currentPosition, double nextPosition, double targetPosition)
     {
         return Math.Sign(targetPosition - currentPosition) != Math.Sign(targetPosition - nextPosition);
+    }
+
+    private static bool CanSettleWithinStep(
+        AxisRuntimeState axis,
+        double distanceToTarget,
+        double elapsedSeconds)
+    {
+        return Math.Abs(distanceToTarget) <= FinalSnapPositionToleranceDegrees
+            && Math.Abs(axis.VelocityDegreesPerSecond) <= axis.Limits.MaxAccelerationDegreesPerSecondSquared * elapsedSeconds;
+    }
+
+    private static void SettleAxis(
+        AxisRuntimeState axis,
+        double elapsedSeconds,
+        double accelerationDegreesPerSecondSquared)
+    {
+        axis.PositionDegrees = axis.TargetPositionDegrees;
+        axis.VelocityDegreesPerSecond = 0;
+        axis.LastAccelerationDegreesPerSecondSquared = accelerationDegreesPerSecondSquared;
+        UpdateThermalState(axis, elapsedSeconds, 0);
     }
 
     private static double Clamp(double value, double min, double max)

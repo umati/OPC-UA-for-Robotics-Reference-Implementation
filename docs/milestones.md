@@ -20,6 +20,7 @@
 - MinimalRealistic instance NodeSet loaded.
 - Bind simulation to MinimalRealistic instance nodes.
 - Address-space mode selection for Temporary, Official, and Both models.
+- Motion validation report mode.
 
 ## Next
 

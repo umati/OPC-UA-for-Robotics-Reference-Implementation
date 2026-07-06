@@ -85,3 +85,15 @@ Runtime binding has started for the MinimalRealistic instance model.
 Binding uses stable NodeIds from the instance NodeSet, with reliable BrowsePaths reserved for future cases where a stable NodeId is not available. `DisplayName` should not be used for binding because it is client-facing text, not an identity contract.
 
 The current MinimalRealistic NodeSet does not define target-position or motor-load runtime variables, so those simulation values are skipped until a richer instance NodeSet adds matching nodes.
+
+## Motion Validation
+
+The reference server includes an offline motion validation report mode:
+
+`--validate-motion`
+
+This mode exercises the existing `RobotSimulationService` without starting the OPC UA server, loading NodeSets, using UaExpert, or requiring an OPC UA client. It checks simulated joint-space motion before visualization or demo usage by running representative moves, collecting per-axis position, velocity, acceleration, joint-limit, and teleport-like jump observations, and reporting an overall PASS/FAIL result.
+
+Motion validation checks bounded physical plausibility and uses tolerance-based settling instead of exact target equality or exact zero velocity. Finite target moves must settle within the configured validation tolerance and timeout; bounded demo-style motion is checked for safety-limit and teleport-like violations over a fixed simulated duration.
+
+Axis motion snaps to the target only inside a small final tolerance and only when the remaining velocity can be removed within the current integration step without exceeding the axis acceleration limit. This avoids residual limit-cycle motion near the target while preserving acceleration-limited movement outside the final settling window.

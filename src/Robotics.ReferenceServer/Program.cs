@@ -2,6 +2,7 @@ using Opc.Ua;
 using Opc.Ua.Configuration;
 using Robotics.ReferenceServer.InformationModel;
 using Robotics.ReferenceServer.Simulation;
+using Robotics.ReferenceServer.Validation;
 using Robotics.Shared;
 
 namespace Robotics.ReferenceServer;
@@ -12,6 +13,12 @@ internal static class Program
 
     public static async Task Main(string[] args)
     {
+        if (args.Contains("--validate-motion", StringComparer.OrdinalIgnoreCase))
+        {
+            Console.Write(new MotionValidationRunner().Run());
+            return;
+        }
+
         if (!TryParseAddressSpaceMode(args, out RobotAddressSpaceMode addressSpaceMode))
         {
             return;
