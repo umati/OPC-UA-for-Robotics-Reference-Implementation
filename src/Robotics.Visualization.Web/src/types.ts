@@ -23,6 +23,8 @@ export type ManualControlReason = 'manual' | 'localDemo' | 'liveTelemetry';
 
 export type TelemetryHeartbeat = 'live' | 'stale' | 'disconnected';
 
+export type RobotModelStatus = 'primitive' | 'glbLoaded' | 'glbFailed' | 'glbLoading';
+
 export interface JointLimit {
   min: number;
   max: number;
@@ -46,10 +48,25 @@ export const homeJointAngles: JointAngles = {
   T: 0,
 };
 
-export interface RobotModel {
+export interface RobotVisualModel {
+  root: THREE.Object3D;
+  toolObject: THREE.Object3D;
+  setJointAngles: (angles: Partial<JointAngles>) => void;
+  getToolWorldPosition: (targetVector: THREE.Vector3) => THREE.Vector3;
+  dispose?: () => void;
+}
+
+export interface PrimitiveRobotModel extends RobotVisualModel {
   root: THREE.Group;
   joints: Record<JointName, THREE.Group>;
   toolGroup: THREE.Group;
+  toolObject: THREE.Group;
+}
+
+export interface RobotModelLoadResult {
+  model: RobotVisualModel;
+  status: RobotModelStatus;
+  message: string;
 }
 
 export interface UiController {
@@ -66,4 +83,5 @@ export interface UiController {
     currentStepIndex?: number | null;
     isMoving?: boolean;
   }) => void;
+  setModelStatus: (status: RobotModelStatus, message: string) => void;
 }

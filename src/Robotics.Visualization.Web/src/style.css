@@ -197,6 +197,12 @@ h2 {
   gap: 10px;
 }
 
+.model-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .view-section {
   display: flex;
   flex-direction: column;
@@ -256,7 +262,8 @@ h2 {
 }
 
 .connection-status,
-.manual-status {
+.manual-status,
+.model-status {
   margin: 0;
   color: #8ba6c1;
   font-size: 12px;
@@ -273,6 +280,18 @@ h2 {
 
 .connection-status[data-status="error"] {
   color: #ffb4b4;
+}
+
+.model-status[data-model-status="glbLoaded"] {
+  color: #b7f7c6;
+}
+
+.model-status[data-model-status="glbFailed"] {
+  color: #ffd39b;
+}
+
+.model-status[data-model-status="glbLoading"] {
+  color: #cfe2ff;
 }
 
 .action-row {

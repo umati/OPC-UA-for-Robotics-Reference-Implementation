@@ -3,11 +3,21 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import './style.css';
 import { createToolFrame, createWorldFrame } from './frameHelpers';
 import { PathTrail } from './pathTrail';
-import { createRobotModel, resetHome, setJointAngles } from './robotModel';
+import { createPrimitiveRobotModel, loadRobotVisualModel, resetHome } from './robotModel';
 import { createStatusOverlay } from './statusOverlay';
 import { getAxisPositions, getAxisVelocities, RobotTelemetryClient, type RobotTelemetryData } from './telemetryClient';
 import { createRobotUi } from './ui';
-import { homeJointAngles, type JointAngles, type JointName, type TelemetryHeartbeat, type UiController, type VisualizationOptions } from './types';
+import {
+  homeJointAngles,
+  type JointAngles,
+  type JointName,
+  type RobotModelLoadResult,
+  type RobotModelStatus,
+  type RobotVisualModel,
+  type TelemetryHeartbeat,
+  type UiController,
+  type VisualizationOptions,
+} from './types';
 
 // The browser renders telemetry only. Robot simulation and program execution stay server-owned.
 
@@ -71,11 +81,11 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-const robot = createRobotModel();
+let robot: RobotVisualModel = createPrimitiveRobotModel();
 scene.add(robot.root);
 
 const toolFrame = createToolFrame();
-robot.toolGroup.add(toolFrame);
+attachToolFrame('primitive');
 
 const pathTrail = new PathTrail({ maxPoints: 1000, minDistance: 0.012 });
 scene.add(pathTrail.line);
@@ -125,7 +135,7 @@ ui = createRobotUi({
 
     stopDemo();
     jointAngles = { ...jointAngles, [jointName]: value };
-    setJointAngles(robot, jointAngles);
+    robot.setJointAngles(jointAngles);
     addToolPathPoint();
     ui.setAngles(jointAngles);
     setVisualizationMode('manual');
@@ -169,6 +179,9 @@ ui = createRobotUi({
   onClearPath(): void {
     pathTrail.clear();
   },
+  onModelReload(): void {
+    void reloadRobotModel();
+  },
   onVisualizationOptionChange(options: VisualizationOptions): void {
     worldFrame.visible = options.showWorldFrame;
     toolFrame.visible = options.showToolFrame;
@@ -179,7 +192,9 @@ ui = createRobotUi({
 
 ui.setManualControlState(true, 'manual');
 ui.setTelemetryHealth('disconnected', null);
+ui.setModelStatus('primitive', 'Primitive fallback model');
 statusOverlay.setTelemetryHealth('disconnected', null);
+void reloadRobotModel();
 
 window.addEventListener('resize', resizeRenderer);
 resizeRenderer();
@@ -188,7 +203,7 @@ renderer.setAnimationLoop(render);
 function render(nowMs: number): void {
   if (demoRunning) {
     jointAngles = demoAngles((nowMs - demoStartMs) / 1000);
-    setJointAngles(robot, jointAngles);
+    robot.setJointAngles(jointAngles);
     ui.setAngles(jointAngles);
     addToolPathPoint();
   }
@@ -233,7 +248,7 @@ function applyLiveTelemetry(message: RobotTelemetryData): void {
 
   if (hasValidPosition) {
     jointAngles = updatedJointAngles;
-    setJointAngles(robot, jointAngles);
+    robot.setJointAngles(jointAngles);
     ui.setAngles(jointAngles);
     addToolPathPoint();
   }
@@ -251,8 +266,43 @@ function applyLiveTelemetry(message: RobotTelemetryData): void {
 }
 
 function addToolPathPoint(): void {
-  robot.toolGroup.getWorldPosition(toolWorldPosition);
+  robot.getToolWorldPosition(toolWorldPosition);
   pathTrail.addPoint(toolWorldPosition);
+}
+
+let robotReloadToken = 0;
+
+async function reloadRobotModel(): Promise<void> {
+  const reloadToken = ++robotReloadToken;
+  ui.setModelStatus('glbLoading', 'Loading GLB model...');
+
+  const result = await loadRobotVisualModel();
+
+  if (reloadToken !== robotReloadToken) {
+    result.model.dispose?.();
+    return;
+  }
+
+  replaceRobotModel(result);
+}
+
+function replaceRobotModel(result: RobotModelLoadResult): void {
+  scene.remove(robot.root);
+  toolFrame.removeFromParent();
+  robot.dispose?.();
+
+  robot = result.model;
+  robot.setJointAngles(jointAngles);
+  scene.add(robot.root);
+  attachToolFrame(result.status);
+  pathTrail.clear();
+  addToolPathPoint();
+  ui.setModelStatus(result.status, result.message);
+}
+
+function attachToolFrame(modelStatus: RobotModelStatus): void {
+  toolFrame.position.set(modelStatus === 'glbLoaded' ? 0 : 0.48, 0, 0);
+  robot.toolObject.add(toolFrame);
 }
 
 function updateTelemetryHealth(nowMs: number): void {

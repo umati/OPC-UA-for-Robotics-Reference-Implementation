@@ -5,6 +5,7 @@ import {
   type JointName,
   type JointVelocities,
   type ManualControlReason,
+  type RobotModelStatus,
   type TelemetryHeartbeat,
   type TelemetryConnectionStatus,
   type UiController,
@@ -23,6 +24,7 @@ interface UiOptions {
   onTelemetryConnect: (url: string) => void;
   onTelemetryDisconnect: () => void;
   onClearPath: () => void;
+  onModelReload: () => void;
   onVisualizationOptionChange: (options: VisualizationOptions) => void;
 }
 
@@ -44,7 +46,7 @@ export function createRobotUi(options: UiOptions): UiController {
   header.innerHTML = `
     <div>
       <p class="eyebrow">OPC UA Robotics</p>
-      <h1>Visualization V3</h1>
+      <h1>Visualization V4A</h1>
     </div>
     <span class="status-pill" data-mode-status>Manual Mode</span>
   `;
@@ -100,6 +102,19 @@ export function createRobotUi(options: UiOptions): UiController {
 
   actions.append(resetButton, demoButton, stopButton);
   options.container.append(actions);
+
+  const modelSection = document.createElement('section');
+  modelSection.className = 'model-panel';
+  modelSection.setAttribute('aria-label', 'Robot model status');
+  modelSection.innerHTML = `
+    <h2>Model</h2>
+    <p class="model-status" data-model-status="primitive">Primitive fallback model</p>
+  `;
+
+  const reloadModelButton = button('Reload Model', 'secondary');
+  reloadModelButton.addEventListener('click', options.onModelReload);
+  modelSection.append(reloadModelButton);
+  options.container.append(modelSection);
 
   const viewSection = document.createElement('section');
   viewSection.className = 'view-section';
@@ -229,7 +244,7 @@ export function createRobotUi(options: UiOptions): UiController {
   const note = document.createElement('section');
   note.className = 'note-panel';
   note.innerHTML = `
-    <p>V3 still uses a primitive placeholder robot.</p>
+    <p>V4A uses a segmented GLB model when available and falls back to the primitive robot.</p>
     <p>Live physics comes from server telemetry; in Live Telemetry Mode the browser is only a renderer.</p>
   `;
   options.container.append(note);
@@ -244,6 +259,7 @@ export function createRobotUi(options: UiOptions): UiController {
   const programStep = options.container.querySelector<HTMLElement>('[data-program-step]');
   const movingState = options.container.querySelector<HTMLElement>('[data-moving-state]');
   const timestamp = options.container.querySelector<HTMLElement>('[data-timestamp]');
+  const modelStatus = options.container.querySelector<HTMLElement>('[data-model-status]');
 
   return {
     setAngles(angles: JointAngles): void {
@@ -344,6 +360,16 @@ export function createRobotUi(options: UiOptions): UiController {
         timestamp.textContent = details.timestampUtc || '-';
       }
     },
+    setModelStatus(status: RobotModelStatus, message: string): void {
+      if (!modelStatus) {
+        return;
+      }
+
+      modelStatus.dataset.modelStatus = status;
+      modelStatus.textContent = modelStatusLabels[status];
+      modelStatus.title = message;
+      reloadModelButton.disabled = status === 'glbLoading';
+    },
   };
 
   function updateOption(key: keyof VisualizationOptions, value: boolean): void {
@@ -368,6 +394,13 @@ const heartbeatLabels: Record<TelemetryHeartbeat, string> = {
   live: 'Live',
   stale: 'Stale',
   disconnected: 'Disconnected',
+};
+
+const modelStatusLabels: Record<RobotModelStatus, string> = {
+  primitive: 'Primitive fallback model',
+  glbLoaded: 'GLB model loaded',
+  glbFailed: 'GLB load failed, using primitive fallback',
+  glbLoading: 'Loading GLB model',
 };
 
 function button(label: string, variant: 'primary' | 'secondary'): HTMLButtonElement {

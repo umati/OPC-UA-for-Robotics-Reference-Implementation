@@ -1,5 +1,19 @@
 import * as THREE from 'three';
-import { homeJointAngles, jointNames, type JointAngles, type JointName, type RobotModel } from './types';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {
+  homeJointAngles,
+  jointNames,
+  type JointAngles,
+  type JointName,
+  type PrimitiveRobotModel,
+  type RobotModelLoadResult,
+  type RobotVisualModel,
+} from './types';
+
+export const glbRobotAssetUrl = '/assets/robots/six-axis-reference.glb';
+export const glbRobotAssetPath = 'public/assets/robots/six-axis-reference.glb';
+
+const expectedGlbNodeNames = ['RobotRoot', 'AxisS', 'AxisL', 'AxisU', 'AxisR', 'AxisB', 'AxisT', 'Tool'] as const;
 
 const materials = {
   base: new THREE.MeshStandardMaterial({ color: 0x2a3441, roughness: 0.64, metalness: 0.35 }),
@@ -14,7 +28,7 @@ export function degreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-export function createRobotModel(): RobotModel {
+export function createPrimitiveRobotModel(): PrimitiveRobotModel {
   const root = new THREE.Group();
   root.name = 'robot-base-root';
 
@@ -106,12 +120,32 @@ export function createRobotModel(): RobotModel {
     T: tAxis,
   };
 
-  setJointAngles({ root, joints, toolGroup }, homeJointAngles);
+  const model: PrimitiveRobotModel = {
+    root,
+    joints,
+    toolGroup,
+    toolObject: toolGroup,
+    setJointAngles(angles): void {
+      setPrimitiveJointAngles(this, angles);
+    },
+    getToolWorldPosition(targetVector): THREE.Vector3 {
+      return this.toolObject.getWorldPosition(targetVector);
+    },
+    dispose(): void {
+      root.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+        }
+      });
+    },
+  };
 
-  return { root, joints, toolGroup };
+  model.setJointAngles(homeJointAngles);
+
+  return model;
 }
 
-export function setJointAngles(robot: RobotModel, angles: Partial<JointAngles>): void {
+export function setPrimitiveJointAngles(robot: PrimitiveRobotModel, angles: Partial<JointAngles>): void {
   for (const jointName of jointNames) {
     const angle = angles[jointName];
 
@@ -144,9 +178,135 @@ export function setJointAngles(robot: RobotModel, angles: Partial<JointAngles>):
   }
 }
 
-export function resetHome(robot: RobotModel): JointAngles {
-  setJointAngles(robot, homeJointAngles);
+export function resetHome(robot: RobotVisualModel): JointAngles {
+  robot.setJointAngles(homeJointAngles);
   return { ...homeJointAngles };
+}
+
+export async function loadRobotVisualModel(): Promise<RobotModelLoadResult> {
+  try {
+    const glbModel = await loadGlbRobotModel();
+    return {
+      model: glbModel,
+      status: 'glbLoaded',
+      message: `GLB model loaded from ${glbRobotAssetPath}.`,
+    };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const warning = `GLB robot model unavailable: ${detail}. Using primitive fallback model.`;
+    console.warn(warning);
+
+    return {
+      model: createPrimitiveRobotModel(),
+      status: 'glbFailed',
+      message: warning,
+    };
+  }
+}
+
+async function loadGlbRobotModel(): Promise<RobotVisualModel> {
+  const loader = new GLTFLoader();
+  const gltf = await loader.loadAsync(glbRobotAssetUrl);
+  let nodes: Record<(typeof expectedGlbNodeNames)[number], THREE.Object3D>;
+
+  try {
+    nodes = findExpectedNodes(gltf.scene);
+  } catch (error) {
+    disposeObjectTree(gltf.scene);
+    throw error;
+  }
+
+  nodes.RobotRoot.traverse((object) => {
+    if (object instanceof THREE.Mesh) {
+      object.castShadow = true;
+      object.receiveShadow = true;
+    }
+  });
+
+  const model: RobotVisualModel = {
+    root: nodes.RobotRoot,
+    toolObject: nodes.Tool,
+    setJointAngles(angles): void {
+      setGlbJointAngles(nodes, angles);
+    },
+    getToolWorldPosition(targetVector): THREE.Vector3 {
+      return nodes.Tool.getWorldPosition(targetVector);
+    },
+    dispose(): void {
+      disposeObjectTree(nodes.RobotRoot);
+    },
+  };
+
+  model.setJointAngles(homeJointAngles);
+  return model;
+}
+
+function disposeObjectTree(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    if (object instanceof THREE.Mesh) {
+      object.geometry.dispose();
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        material.dispose();
+      }
+    }
+  });
+}
+
+function findExpectedNodes(root: THREE.Object3D): Record<(typeof expectedGlbNodeNames)[number], THREE.Object3D> {
+  const nodes = {} as Record<(typeof expectedGlbNodeNames)[number], THREE.Object3D>;
+  const missing: string[] = [];
+
+  for (const nodeName of expectedGlbNodeNames) {
+    const node = root.getObjectByName(nodeName);
+    if (node) {
+      nodes[nodeName] = node;
+    } else {
+      missing.push(nodeName);
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new Error(`missing required GLB nodes: ${missing.join(', ')}`);
+  }
+
+  return nodes;
+}
+
+function setGlbJointAngles(
+  nodes: Record<(typeof expectedGlbNodeNames)[number], THREE.Object3D>,
+  angles: Partial<JointAngles>,
+): void {
+  for (const jointName of jointNames) {
+    const angle = angles[jointName];
+
+    if (angle === undefined) {
+      continue;
+    }
+
+    const radians = degreesToRadians(angle);
+
+    switch (jointName) {
+      case 'S':
+        nodes.AxisS.rotation.y = radians;
+        break;
+      case 'L':
+        nodes.AxisL.rotation.z = radians;
+        break;
+      case 'U':
+        nodes.AxisU.rotation.z = radians;
+        break;
+      case 'R':
+        nodes.AxisR.rotation.x = radians;
+        break;
+      case 'B':
+        nodes.AxisB.rotation.z = radians;
+        break;
+      case 'T':
+        nodes.AxisT.rotation.x = radians;
+        break;
+    }
+  }
 }
 
 function cylinder(name: string, radius: number, height: number, material: THREE.Material): THREE.Mesh {
