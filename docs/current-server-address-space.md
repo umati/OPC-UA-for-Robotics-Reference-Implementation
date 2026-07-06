@@ -1,12 +1,17 @@
 # Current Server Address Space
 
-The current OPC UA server address space is a temporary demo model. It is useful for exercising the reference server, robot simulation, telemetry, remote control, and remote program execution paths.
+The OPC UA server address space now has two areas:
 
-It is not yet the full OPC UA Robotics v1.02 companion specification model. The official OPC UA NodeSet files still need to be loaded and used as the source of truth before this becomes a specification-aligned Robotics address space.
+- The temporary demo model under `Objects/Robots/SixAxisRobot`.
+- The imported MinimalRealistic instance model from `NodeSets/Instances/SixAxisRobot.MinimalRealistic.Instance.NodeSet2.xml`.
 
-This temporary address space remains active until the official type NodeSets and the planned `SixAxisRobot.Instance.NodeSet2.xml` instance model are loaded, bound to simulation values, and verified. Future instance NodeSet variants can expose different OPC UA Robotics representations while using the same simulated robot backend.
+The temporary demo model remains useful for exercising the reference server, robot simulation, telemetry, remote control, and remote program execution paths. It is kept during migration so existing clients and method behavior remain unchanged.
+
+The imported MinimalRealistic model is the first official OPC UA Robotics instance variant loaded through the NodeSet chain. The server also loads the required OPC UA DI and OPC UA Robotics type NodeSets. Runtime simulation values are not bound to the imported instance nodes yet; that binding is the next model milestone.
 
 ## Browse Tree
+
+### Temporary Demo Model
 
 ```text
 Objects
@@ -24,6 +29,18 @@ Objects
         ├── RemoteControl
         └── RemotePrograms
 ```
+
+### Imported MinimalRealistic Instance Model
+
+```text
+Objects
+└── SixAxisRobotSystem
+    ├── Controllers
+    ├── MotionDevices
+    └── SafetyStates
+```
+
+The imported model includes one MotionDeviceSystem, one MotionDevice, six axes, controller/task structure, safety state structure, and powertrain/motor structure. These nodes are static imported NodeSet nodes until runtime binding is added.
 
 ## Robot Identity
 
@@ -65,6 +82,6 @@ Available sample programs:
 
 ## Implementation Status
 
-The current implementation has a working minimal OPC UA server, a neutral simulated six-axis robot, live telemetry updates, simple `RemoteControl` methods, JSON robot program contracts, and exposed `RemotePrograms` methods.
+The current implementation has a working minimal OPC UA server, a neutral simulated six-axis robot, live telemetry updates, simple `RemoteControl` methods, JSON robot program contracts, exposed `RemotePrograms` methods, and imported official DI/Robotics type NodeSets plus the MinimalRealistic instance NodeSet.
 
-The next model milestone is to create the first SixAxisRobot instance NodeSet, load the official OPC UA type NodeSets and the instance NodeSet, then bind simulation values to selected loaded Robotics nodes. The temporary demo nodes should remain in place until the official instance NodeSet model is working and verified.
+The next model milestone is to bind simulation values to selected loaded Robotics nodes. The temporary demo nodes should remain in place until the official instance NodeSet model is bound and verified.

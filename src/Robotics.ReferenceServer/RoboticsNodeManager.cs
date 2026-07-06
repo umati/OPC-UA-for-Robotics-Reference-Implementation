@@ -1,5 +1,6 @@
 using Opc.Ua;
 using Opc.Ua.Server;
+using Robotics.ReferenceServer.InformationModel;
 using Robotics.ReferenceServer.Simulation;
 using Robotics.Shared;
 using System.Text.Json;
@@ -32,7 +33,13 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private DateTimeOffset _lastSimulationUpdateUtc = DateTimeOffset.UtcNow;
 
     public RoboticsNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        : base(server, configuration, NamespaceUri)
+        : base(
+            server,
+            configuration,
+            NamespaceUri,
+            NodeSetLoader.DiNamespaceUri,
+            NodeSetLoader.RoboticsNamespaceUri,
+            NodeSetLoader.InstanceNamespaceUri)
     {
         _simulationService = new RobotSimulationService();
         _programExecutor = new RobotProgramExecutor(_simulationService);
@@ -41,6 +48,12 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
 
     public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
     {
+        // The imported MinimalRealistic instance NodeSet is the first official Robotics model variant.
+        // Runtime simulation binding is intentionally left for a later milestone.
+        NodeStateCollection importedRoboticsNodes = NodeSetLoader.LoadRequiredNodeSets(SystemContext);
+        AddImportedRoboticsNodes(importedRoboticsNodes, externalReferences);
+
+        // Keep the temporary demo nodes during migration so existing telemetry and methods remain available.
         var robotsFolder = CreateRobotsFolder();
         var robot = CreateSixAxisRobot(robotsFolder);
 
@@ -49,6 +62,25 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         AddObjectsFolderReference(externalReferences, robotsFolder.NodeId);
         SetStartupJointTarget();
         StartSimulationUpdates();
+    }
+
+    private void AddImportedRoboticsNodes(
+        NodeStateCollection importedRoboticsNodes,
+        IDictionary<NodeId, IList<IReference>> externalReferences)
+    {
+        NodeId minimalRealisticRootNodeId = NodeSetLoader.GetMinimalRealisticRootNodeId(SystemContext);
+        if (importedRoboticsNodes.Find(node => Equals(node.NodeId, minimalRealisticRootNodeId)) is null)
+        {
+            throw new InvalidOperationException(
+                $"The imported MinimalRealistic instance root '{minimalRealisticRootNodeId}' was not found after NodeSet loading.");
+        }
+
+        foreach (NodeState importedNode in importedRoboticsNodes)
+        {
+            AddPredefinedNode(SystemContext, importedNode);
+        }
+
+        AddReverseReferences(externalReferences);
     }
 
     protected override void Dispose(bool disposing)
