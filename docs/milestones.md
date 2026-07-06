@@ -17,14 +17,23 @@
 
 ## Next
 
+- Add robot model variant selection.
+- Create first SixAxisRobot instance NodeSet.
+- Add MinimalRealistic instance NodeSet.
+- Add RichReference instance NodeSet.
 - Load official OPC UA NodeSet files.
 - Load OPC UA DI NodeSet.
 - Load OPC UA Robotics NodeSet.
+- Load official type NodeSets and instance NodeSet.
+- Bind simulation to instance nodes.
 - Map temporary demo nodes to official Robotics concepts.
 - Instantiate official Robotics model objects.
+- Gradually retire temporary demo nodes after official model is working.
 
 ## Later
 
+- Add negative conformance test target NodeSets.
+- Build conformance unit testing client/tool.
 - Expose asset management variables using the official information model.
 - Expose condition monitoring variables using the official information model.
 - Build client dashboard.
