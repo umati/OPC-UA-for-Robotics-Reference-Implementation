@@ -5,6 +5,7 @@ import {
   type JointName,
   type JointVelocities,
   type ManualControlReason,
+  type ProgramTelemetryDetails,
   type RobotModelStatus,
   type TelemetryHeartbeat,
   type TelemetryConnectionStatus,
@@ -41,7 +42,12 @@ export function createRobotUi(options: UiOptions): UiController {
     showToolFrame: true,
     showGrid: true,
     showPathTrail: true,
+    showTargetMarkers: true,
+    showGhostPose: true,
+    showFuturePreview: true,
   };
+  let currentMode: VisualizationMode = 'manual';
+  let currentProgramDetails: ProgramTelemetryDetails = {};
 
   options.container.innerHTML = '';
 
@@ -50,7 +56,7 @@ export function createRobotUi(options: UiOptions): UiController {
   header.innerHTML = `
     <div>
       <p class="eyebrow">OPC UA Robotics</p>
-      <h1>Visualization V5</h1>
+      <h1>Visualization V6</h1>
     </div>
     <span class="status-pill" data-mode-status>Manual Mode</span>
   `;
@@ -144,6 +150,9 @@ export function createRobotUi(options: UiOptions): UiController {
   addVisualizationToggle('showToolFrame', 'Tool frame');
   addVisualizationToggle('showGrid', 'Grid');
   addVisualizationToggle('showPathTrail', 'Path trail');
+  addVisualizationToggle('showTargetMarkers', 'Target markers');
+  addVisualizationToggle('showGhostPose', 'Ghost pose');
+  addVisualizationToggle('showFuturePreview', 'Future preview');
 
   const clearPathButton = button('Clear Path', 'secondary');
   const resetCameraButton = button('Reset Camera', 'secondary');
@@ -262,10 +271,29 @@ export function createRobotUi(options: UiOptions): UiController {
   telemetry.append(programGrid);
   options.container.append(telemetry);
 
+  const programPreview = document.createElement('section');
+  programPreview.className = 'program-preview-panel';
+  programPreview.setAttribute('aria-label', 'Program target preview');
+  programPreview.innerHTML = `
+    <h2>Program Preview</h2>
+    <p class="program-preview-message" data-program-preview-message>No program target data available</p>
+    <dl class="program-grid">
+      <div><dt>Program</dt><dd data-preview-program>-</dd></div>
+      <div><dt>State</dt><dd data-preview-state>-</dd></div>
+      <div><dt>Step</dt><dd data-preview-step>-</dd></div>
+      <div><dt>Step Type</dt><dd data-preview-step-type>-</dd></div>
+      <div class="wide"><dt>Step Name</dt><dd data-preview-step-name>-</dd></div>
+      <div class="wide"><dt>Current Target</dt><dd data-preview-current-target>-</dd></div>
+      <div class="wide"><dt>Next Target</dt><dd data-preview-next-target>-</dd></div>
+      <div class="wide"><dt>Preview Basis</dt><dd>Approximate visual preview from server target metadata</dd></div>
+    </dl>
+  `;
+  options.container.append(programPreview);
+
   const note = document.createElement('section');
   note.className = 'note-panel';
   note.innerHTML = `
-    <p>V5 uses a segmented GLB model when available and falls back to the procedural robot.</p>
+    <p>V6 uses a segmented GLB model when available and falls back to the procedural robot.</p>
     <p>Live physics comes from server telemetry; in Live Telemetry Mode the browser is only a renderer.</p>
   `;
   options.container.append(note);
@@ -279,6 +307,7 @@ export function createRobotUi(options: UiOptions): UiController {
       <li>Official OPC UA Robotics instance model</li>
       <li>Simulation-bound live values</li>
       <li>WebSocket visualization bridge</li>
+      <li>Program metadata preview when emitted by server telemetry</li>
       <li>Browser renders only, server remains source of truth</li>
     </ul>
   `;
@@ -295,6 +324,14 @@ export function createRobotUi(options: UiOptions): UiController {
   const movingState = options.container.querySelector<HTMLElement>('[data-moving-state]');
   const timestamp = options.container.querySelector<HTMLElement>('[data-timestamp]');
   const modelStatus = options.container.querySelector<HTMLElement>('[data-model-status]');
+  const previewMessage = options.container.querySelector<HTMLElement>('[data-program-preview-message]');
+  const previewProgram = options.container.querySelector<HTMLElement>('[data-preview-program]');
+  const previewState = options.container.querySelector<HTMLElement>('[data-preview-state]');
+  const previewStep = options.container.querySelector<HTMLElement>('[data-preview-step]');
+  const previewStepType = options.container.querySelector<HTMLElement>('[data-preview-step-type]');
+  const previewStepName = options.container.querySelector<HTMLElement>('[data-preview-step-name]');
+  const previewCurrentTarget = options.container.querySelector<HTMLElement>('[data-preview-current-target]');
+  const previewNextTarget = options.container.querySelector<HTMLElement>('[data-preview-next-target]');
 
   return {
     setAngles(angles: JointAngles): void {
@@ -326,6 +363,7 @@ export function createRobotUi(options: UiOptions): UiController {
       }
     },
     setMode(mode: VisualizationMode): void {
+      currentMode = mode;
       if (!modeStatus) {
         return;
       }
@@ -338,6 +376,8 @@ export function createRobotUi(options: UiOptions): UiController {
       if (statusMode) {
         statusMode.textContent = modeLabels[mode];
       }
+
+      updateProgramPreviewPanel();
     },
     setConnectionStatus(status: TelemetryConnectionStatus, detail?: string): void {
       connectionStatus.textContent = detail ? `${status}: ${detail}` : status;
@@ -374,6 +414,7 @@ export function createRobotUi(options: UiOptions): UiController {
       }
     },
     setTelemetryDetails(details): void {
+      currentProgramDetails = details;
       if (programName) {
         programName.textContent = details.currentProgramName || '-';
       }
@@ -395,6 +436,8 @@ export function createRobotUi(options: UiOptions): UiController {
       if (timestamp) {
         timestamp.textContent = details.timestampUtc || '-';
       }
+
+      updateProgramPreviewPanel();
     },
     setModelStatus(status: RobotModelStatus, message: string): void {
       if (!modelStatus) {
@@ -431,6 +474,50 @@ export function createRobotUi(options: UiOptions): UiController {
   function updateOption(key: keyof VisualizationOptions, value: boolean): void {
     visualizationOptions[key] = value;
     options.onVisualizationOptionChange({ ...visualizationOptions });
+  }
+
+  function updateProgramPreviewPanel(): void {
+    const details = currentProgramDetails;
+    const hasProgramMetadata = !!details.currentProgramName
+      || details.currentStepIndex !== undefined
+      || !!details.currentStepType
+      || hasAnyJointAngle(details.activeTargetJointAngles)
+      || hasAnyJointAngle(details.nextTargetJointAngles);
+
+    if (previewMessage) {
+      previewMessage.textContent = getProgramPreviewMessage(currentMode, hasProgramMetadata);
+      previewMessage.dataset.previewState = hasProgramMetadata ? 'available' : 'empty';
+    }
+
+    if (previewProgram) {
+      previewProgram.textContent = details.currentProgramName || '-';
+    }
+
+    if (previewState) {
+      previewState.textContent = details.programExecutionState || '-';
+    }
+
+    if (previewStep) {
+      previewStep.textContent = formatStep(details.currentStepIndex, details.totalStepCount);
+    }
+
+    if (previewStepType) {
+      previewStepType.textContent = details.currentStepType || '-';
+    }
+
+    if (previewStepName) {
+      previewStepName.textContent = details.currentStepName || '-';
+    }
+
+    if (previewCurrentTarget) {
+      previewCurrentTarget.textContent = formatJointTarget(details.activeTargetJointAngles);
+      previewCurrentTarget.title = previewCurrentTarget.textContent;
+    }
+
+    if (previewNextTarget) {
+      previewNextTarget.textContent = formatJointTarget(details.nextTargetJointAngles);
+      previewNextTarget.title = previewNextTarget.textContent;
+    }
   }
 }
 
@@ -497,4 +584,47 @@ function formatDegrees(value: number): string {
 function formatVelocity(value: number): string {
   const rounded = Math.abs(value) < 0.005 ? 0 : value;
   return `${rounded.toFixed(1)} deg/s`;
+}
+
+function formatStep(index: number | null | undefined, total: number | undefined): string {
+  if (index === null || index === undefined) {
+    return total && total > 0 ? `- / ${total}` : '-';
+  }
+
+  return total && total > 0 ? `${index + 1} / ${total}` : index.toString();
+}
+
+function formatJointTarget(target: Partial<JointAngles> | null | undefined): string {
+  if (!hasAnyJointAngle(target)) {
+    return '-';
+  }
+
+  return jointNames
+    .filter((jointName) => target?.[jointName] !== undefined)
+    .map((jointName) => `${jointName} ${formatDegrees(target?.[jointName] ?? 0)}`)
+    .join('  ');
+}
+
+function hasAnyJointAngle(target: Partial<JointAngles> | null | undefined): boolean {
+  return !!target && Object.keys(target).length > 0;
+}
+
+function getProgramPreviewMessage(mode: VisualizationMode, hasProgramMetadata: boolean): string {
+  if (hasProgramMetadata) {
+    return 'Server program metadata available';
+  }
+
+  if (mode === 'localDemo') {
+    return 'Local Demo motion has no server program metadata';
+  }
+
+  if (mode === 'presentationDemo') {
+    return 'Presentation local demo has no server program metadata';
+  }
+
+  if (mode === 'manual') {
+    return 'No server program target available in Manual Mode';
+  }
+
+  return 'No program target data available';
 }

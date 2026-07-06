@@ -139,13 +139,23 @@ public sealed class RobotProgramExecutor
 
     public RobotProgramExecutionSnapshot GetSnapshot()
     {
+        RobotProgramStep? currentStep = GetStepOrNull(_currentStepIndex);
+        RobotProgramStep? nextMoveJointStep = GetNextMoveJointStep(_currentStepIndex + 1);
+
         return new RobotProgramExecutionSnapshot
         {
             CurrentProgramName = CurrentProgramName,
             CurrentStepIndex = _currentStepIndex,
             State = _state,
             LastErrorMessage = _lastErrorMessage,
-            TotalStepCount = _currentProgram?.Steps.Count ?? 0
+            TotalStepCount = _currentProgram?.Steps.Count ?? 0,
+            CurrentStepType = currentStep?.Type?.ToString(),
+            CurrentStepName = null,
+            ActiveTargetJointAngles = currentStep?.Type == RobotProgramStepType.MoveJoint
+                ? currentStep.JointTarget
+                : null,
+            NextTargetJointAngles = nextMoveJointStep?.JointTarget,
+            QueuedTargetJointAngles = GetQueuedMoveJointTargets(_currentStepIndex + 1)
         };
     }
 
@@ -229,6 +239,49 @@ public sealed class RobotProgramExecutor
         ResetCurrentStep();
     }
 
+    private RobotProgramStep? GetStepOrNull(int index)
+    {
+        if (_currentProgram is null || index < 0 || index >= _currentProgram.Steps.Count)
+        {
+            return null;
+        }
+
+        return _currentProgram.Steps[index];
+    }
+
+    private RobotProgramStep? GetNextMoveJointStep(int startIndex)
+    {
+        if (_currentProgram is null)
+        {
+            return null;
+        }
+
+        for (int index = Math.Max(0, startIndex); index < _currentProgram.Steps.Count; index++)
+        {
+            RobotProgramStep step = _currentProgram.Steps[index];
+            if (step.Type == RobotProgramStepType.MoveJoint && step.JointTarget is not null)
+            {
+                return step;
+            }
+        }
+
+        return null;
+    }
+
+    private IReadOnlyList<JointMoveTarget> GetQueuedMoveJointTargets(int startIndex)
+    {
+        if (_currentProgram is null)
+        {
+            return [];
+        }
+
+        return _currentProgram.Steps
+            .Skip(Math.Max(0, startIndex))
+            .Where(step => step.Type == RobotProgramStepType.MoveJoint && step.JointTarget is not null)
+            .Select(step => step.JointTarget!)
+            .ToArray();
+    }
+
     private static IEnumerable<RobotJointTarget> ToJointTargets(JointMoveTarget target)
     {
         yield return new RobotJointTarget { AxisName = RobotAxisName.S, TargetPositionDegrees = target.S };
@@ -251,4 +304,14 @@ public sealed record RobotProgramExecutionSnapshot
     public string? LastErrorMessage { get; init; }
 
     public required int TotalStepCount { get; init; }
+
+    public string? CurrentStepType { get; init; }
+
+    public string? CurrentStepName { get; init; }
+
+    public JointMoveTarget? ActiveTargetJointAngles { get; init; }
+
+    public JointMoveTarget? NextTargetJointAngles { get; init; }
+
+    public IReadOnlyList<JointMoveTarget> QueuedTargetJointAngles { get; init; } = [];
 }

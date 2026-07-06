@@ -17,6 +17,9 @@ export interface VisualizationOptions {
   showToolFrame: boolean;
   showGrid: boolean;
   showPathTrail: boolean;
+  showTargetMarkers: boolean;
+  showGhostPose: boolean;
+  showFuturePreview: boolean;
 }
 
 export type ManualControlReason = 'manual' | 'localDemo' | 'liveTelemetry' | 'presentationDemo';
@@ -69,6 +72,20 @@ export interface RobotModelLoadResult {
   message: string;
 }
 
+export interface ProgramTelemetryDetails {
+  timestampUtc?: string;
+  currentProgramName?: string | null;
+  programExecutionState?: string;
+  currentStepIndex?: number | null;
+  totalStepCount?: number;
+  currentStepType?: string | null;
+  currentStepName?: string | null;
+  activeTargetJointAngles?: Partial<JointAngles> | null;
+  nextTargetJointAngles?: Partial<JointAngles> | null;
+  queuedTargetJointAngles?: Partial<JointAngles>[];
+  isMoving?: boolean;
+}
+
 export interface UiController {
   setAngles: (angles: JointAngles) => void;
   setVelocities: (velocities: JointVelocities) => void;
@@ -76,13 +93,7 @@ export interface UiController {
   setConnectionStatus: (status: TelemetryConnectionStatus, detail?: string) => void;
   setManualControlState: (isEnabled: boolean, reason: ManualControlReason) => void;
   setTelemetryHealth: (heartbeat: TelemetryHeartbeat, ageMs: number | null) => void;
-  setTelemetryDetails: (details: {
-    timestampUtc?: string;
-    currentProgramName?: string | null;
-    programExecutionState?: string;
-    currentStepIndex?: number | null;
-    isMoving?: boolean;
-  }) => void;
+  setTelemetryDetails: (details: ProgramTelemetryDetails) => void;
   setModelStatus: (status: RobotModelStatus, message: string) => void;
   setPresentationActive: (isActive: boolean) => void;
   setVisualizationOptions: (options: VisualizationOptions) => void;

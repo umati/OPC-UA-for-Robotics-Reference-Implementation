@@ -27,6 +27,7 @@
 - Visualization V4A: segmented GLB loading with primitive fallback.
 - Visualization V4B: premium procedural fallback robot.
 - Visualization V5: presentation demo mode.
+- Visualization V6: live program/path preview.
 
 ## Next
 
@@ -38,9 +39,10 @@
 ## Later
 
 - Map RemoteControl and RemotePrograms behavior to official Robotics TaskControl concepts.
+- Add official Robotics TaskControl mapping for program execution state and target metadata.
 - Add negative conformance test target NodeSets.
 - Build conformance unit testing client/tool.
 - Expose asset management variables using the official information model.
 - Expose condition monitoring variables using the official information model.
 - Build client dashboard.
-- Extend 3D visualization with target frames, ghost pose, and program overlays.
+- Extend 3D visualization with richer standards-aligned program timeline overlays.

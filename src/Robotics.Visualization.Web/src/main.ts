@@ -5,6 +5,7 @@ import { CameraChoreography } from './cameraChoreography';
 import { createToolFrame, createWorldFrame } from './frameHelpers';
 import { PathTrail } from './pathTrail';
 import { createPresentationOverlay, type PresentationMotionSource } from './presentationMode';
+import { ProgramPreview } from './programPreview';
 import { createPrimitiveRobotModel, loadRobotVisualModel, resetHome } from './robotModel';
 import { createStatusOverlay } from './statusOverlay';
 import { getAxisPositions, getAxisVelocities, RobotTelemetryClient, type RobotTelemetryData } from './telemetryClient';
@@ -13,6 +14,7 @@ import {
   homeJointAngles,
   type JointAngles,
   type JointName,
+  type ProgramTelemetryDetails,
   type RobotModelLoadResult,
   type RobotModelStatus,
   type RobotVisualModel,
@@ -99,6 +101,7 @@ attachToolFrame('primitive');
 
 const pathTrail = new PathTrail({ maxPoints: 1000, minDistance: 0.012 });
 scene.add(pathTrail.line);
+const programPreview = new ProgramPreview(scene);
 
 let jointAngles: JointAngles = { ...homeJointAngles };
 let demoRunning = false;
@@ -112,18 +115,15 @@ let visualizationMode: Exclude<VisualizationMode, 'presentationDemo'> = 'manual'
 let presentationActive = false;
 let presentationStartedLocalDemo = false;
 let robotModelStatus: RobotModelStatus = 'primitive';
-let latestTelemetryDetails: {
-  timestampUtc?: string;
-  currentProgramName?: string | null;
-  programExecutionState?: string;
-  currentStepIndex?: number | null;
-  isMoving?: boolean;
-} = {};
+let latestTelemetryDetails: ProgramTelemetryDetails = {};
 let visualizationOptions: VisualizationOptions = {
   showWorldFrame: true,
   showToolFrame: true,
   showGrid: true,
   showPathTrail: true,
+  showTargetMarkers: true,
+  showGhostPose: true,
+  showFuturePreview: true,
 };
 const toolWorldPosition = new THREE.Vector3();
 
@@ -143,6 +143,9 @@ const telemetryClient = new RobotTelemetryClient({
     if (status === 'disconnected' || status === 'error') {
       liveTelemetryActive = false;
       lastTelemetryReceivedMs = null;
+      latestTelemetryDetails = {};
+      ui.setTelemetryDetails(latestTelemetryDetails);
+      statusOverlay.setTelemetryDetails(latestTelemetryDetails);
       updateTelemetryHealth(performance.now());
 
       if (presentationActive) {
@@ -261,6 +264,7 @@ function render(nowMs: number): void {
   }
 
   updateTelemetryHealth(nowMs);
+  updateProgramPreview();
   if (presentationActive) {
     cameraChoreography.update(nowMs);
     updatePresentationOverlay();
@@ -295,6 +299,9 @@ function startPresentation(): void {
     showToolFrame: true,
     showGrid: true,
     showPathTrail: true,
+    showTargetMarkers: true,
+    showGhostPose: true,
+    showFuturePreview: true,
   });
   ui.setVisualizationOptions(visualizationOptions);
 
@@ -378,6 +385,12 @@ function applyLiveTelemetry(message: RobotTelemetryData): void {
     currentProgramName: message.currentProgramName,
     programExecutionState: message.programExecutionState,
     currentStepIndex: message.currentStepIndex,
+    totalStepCount: message.totalStepCount,
+    currentStepType: message.currentStepType,
+    currentStepName: message.currentStepName,
+    activeTargetJointAngles: message.activeTargetJointAngles,
+    nextTargetJointAngles: message.nextTargetJointAngles,
+    queuedTargetJointAngles: message.queuedTargetJointAngles,
     isMoving: message.isMoving,
   };
   latestTelemetryDetails = telemetryDetails;
@@ -420,6 +433,7 @@ function replaceRobotModel(result: RobotModelLoadResult): void {
   addToolPathPoint();
   robotModelStatus = result.status;
   ui.setModelStatus(result.status, result.message);
+  updateProgramPreview();
 }
 
 function attachToolFrame(_modelStatus: RobotModelStatus): void {
@@ -462,6 +476,18 @@ function applyVisualizationOptions(options: VisualizationOptions): void {
   toolFrame.visible = visualizationOptions.showToolFrame;
   grid.visible = visualizationOptions.showGrid;
   pathTrail.setVisible(visualizationOptions.showPathTrail);
+  updateProgramPreview();
+}
+
+function updateProgramPreview(): void {
+  programPreview.update({
+    robot,
+    currentJointAngles: jointAngles,
+    telemetryDetails: latestTelemetryDetails,
+    visualizationOptions,
+    mode: presentationActive ? 'presentationDemo' : visualizationMode,
+    liveTelemetryActive,
+  });
 }
 
 function updatePresentationOverlay(): void {

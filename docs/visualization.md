@@ -1,8 +1,8 @@
 # Visualization
 
-Visualization V5 is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer` and includes a polished one-click presentation demo mode.
+Visualization V6 is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer`, includes a polished one-click presentation demo mode, and shows program target metadata when the telemetry stream provides it.
 
-The browser does not connect to OPC UA directly and does not define robot physics. It renders the latest telemetry snapshot produced by the server simulation.
+The browser does not connect to OPC UA directly and does not define robot physics. It renders the latest telemetry snapshot produced by the server simulation. Program/path previews are approximate visual aids based on server-provided metadata; they are not the actual simulated or controller trajectory.
 
 ## Run the Reference Server
 
@@ -52,7 +52,7 @@ The heartbeat indicator reports:
 - `Stale` when the WebSocket is connected but no telemetry message has arrived for more than 1 second.
 - `Disconnected` when the WebSocket is not connected.
 
-## V5 Controls
+## V6 Controls
 
 - `Reset Home`: returns the active robot model to the home pose in Manual Mode.
 - `Local Demo`: runs the browser-side demo animation retained from V1. Sliders remain visible but disabled because the local animation owns the pose.
@@ -65,6 +65,9 @@ The heartbeat indicator reports:
 - `Tool frame`: toggles the coordinate frame attached to the end-effector tool group.
 - `Grid`: toggles the engineering floor grid.
 - `Path trail`: toggles rendering of the recent TCP/tool path.
+- `Target markers`: toggles the Current Target and Next Target scene markers when server program target data is available.
+- `Ghost pose`: toggles the lightweight ghost tool pose at the active target.
+- `Future preview`: toggles the approximate dotted preview line through current TCP, active target, and next target.
 - `Clear Path`: clears the accumulated path buffer.
 - `Reset Camera`: restores the strong presentation camera angle.
 
@@ -73,6 +76,39 @@ Keyboard shortcuts:
 - `D`: toggles Presentation Demo Mode.
 - `C`: clears the path trail.
 - `R`: resets the camera.
+
+## Visualization V6: Program and Path Preview
+
+V6 adds a `Program Preview` panel and lightweight scene annotations for live program metadata. When the WebSocket telemetry message contains program target fields, the viewer can show:
+
+- Current program name and execution state.
+- Current step index / total step count.
+- Current step type.
+- Current step name when available from server metadata.
+- Current target joint angles.
+- Next target joint angles.
+- A `Current Target` marker at the approximate active target tool position.
+- A `Next Target` marker with a distinct visual style.
+- A lightweight ghost target tool pose.
+- A dotted approximate future path preview between current tool position, active target, and next target.
+
+The preview uses only metadata emitted by the server. The browser temporarily evaluates the active visual robot hierarchy to estimate where the tool would be for the supplied joint angles, then restores the live pose before rendering. This keeps the simulation and program executor server-owned. The preview line is intentionally labeled approximate because it is not motion planning, interpolation, collision checking, acceleration limiting, or a standardized OPC UA Robotics trajectory.
+
+The telemetry fields used by V6 are optional and backward compatible:
+
+- `currentProgramName`
+- `programExecutionState`
+- `currentStepIndex`
+- `totalStepCount`
+- `currentStepType`
+- `currentStepName`
+- `activeTargetJointAngles`
+- `nextTargetJointAngles`
+- `queuedTargetJointAngles`
+
+Target joint angle objects use the existing `S`, `L`, `U`, `R`, `B`, and `T` keys with degree values. If these fields are missing or null, the Program Preview panel shows `No program target data available`, the target markers are hidden, and live robot motion continues using the regular axis telemetry.
+
+Manual Mode and Local Demo Mode do not fabricate program metadata. Manual Mode reports that no server program target is available, and Local Demo reports that local demo motion has no server program metadata. Presentation Demo Mode shows program preview data only while connected to live telemetry; otherwise it continues to present the standards story and local demo motion source.
 
 ## Visualization V5: Presentation Demo Mode
 
@@ -204,22 +240,24 @@ The world frame marks the base scene reference. The tool frame is attached to th
 - Local Demo motion retained from V1.
 - Live telemetry WebSocket client for `ws://localhost:48080/telemetry`.
 - Scene overlay and side-panel status for mode, connection state, heartbeat, telemetry age, joint position, joint velocity, program state, current step, moving state, and timestamp.
+- Program Preview panel for optional server-provided program metadata, current/next target joint angles, and approximate visual target/path preview.
 - Presentation Demo Mode with one-click path/frame/grid setup, slow camera choreography, motion-source-aware overlay, and Standards Story panel.
 - Live TCP/tool path trail with clear and visibility controls.
 - World/base and tool coordinate frame helpers.
 - Side-panel model status and GLB reload control.
 - Keyboard shortcuts for presentation mode, path clearing, and camera reset.
 
-## V5 Limitations
+## V6 Limitations
 
 - The WebSocket bridge streams JSON snapshots only; command/control remains through existing server mechanisms.
 - The GLB asset is optional and may not be present in the repository yet.
 - GLB validation checks required node names, but it cannot prove pivots and local axes were authored correctly.
 - Broadcasts repeat the latest server simulation snapshot and do not increase simulation fidelity.
 - Missing or invalid axis fields are ignored by the browser and leave the last valid pose value in place.
-- No target frame, ghost pose, or program timeline overlay visualization yet.
+- Program/path preview depends on optional telemetry metadata and is hidden when the server does not provide target fields.
+- Target markers, ghost pose, and future path preview are approximate visual overlays, not exact robot trajectories.
 - No physics simulation in the browser.
 
 ## Visualization Plan
 
-After V5, target frames, ghost pose comparison, richer program overlays, and the final segmented GLB robot can be added for robot program review and debugging.
+After V6, richer standards-aligned TaskControl visualization, richer queued program timeline overlays, and the final segmented GLB robot can be added for robot program review and debugging.

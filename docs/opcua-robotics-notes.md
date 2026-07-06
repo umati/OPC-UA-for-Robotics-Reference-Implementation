@@ -103,3 +103,7 @@ Axis motion snaps to the target only inside a small final tolerance and only whe
 Visualization V2 consumes server telemetry from `ws://localhost:48080/telemetry` while the reference server is running.
 
 The browser visualization does not define robot physics, motion validation, program execution, or simulation behavior. It renders the current joint positions and status fields emitted by the server-side simulation, which remains the source of truth.
+
+Visualization V6 can also show program metadata from the server telemetry stream when those optional fields are present. The current implementation can expose the loaded program name, execution state, step index/count, step type, and server-known joint targets for the active and next move steps. The browser uses those values only for approximate visual target markers, ghost tool pose, and future path preview.
+
+This telemetry preview is not the final OPC UA Robotics standards mapping. The temporary `RemotePrograms` behavior and visualization metadata still need to be mapped to official Robotics TaskControl concepts in a later standards-aligned milestone.

@@ -1,4 +1,4 @@
-import { jointNames, type JointName, type TelemetryConnectionStatus } from './types';
+import { jointNames, type JointAngles, type JointName, type TelemetryConnectionStatus } from './types';
 
 export const defaultTelemetryUrl = 'ws://localhost:48080/telemetry';
 
@@ -13,6 +13,12 @@ export interface RobotTelemetryData {
   currentProgramName?: string | null;
   programExecutionState?: string;
   currentStepIndex?: number | null;
+  totalStepCount?: number;
+  currentStepType?: string | null;
+  currentStepName?: string | null;
+  activeTargetJointAngles?: Partial<JointAngles> | null;
+  nextTargetJointAngles?: Partial<JointAngles> | null;
+  queuedTargetJointAngles?: Partial<JointAngles>[];
   isMoving?: boolean;
 }
 
@@ -148,6 +154,21 @@ function parseTelemetryMessage(rawData: string): RobotTelemetryData | null {
           : message.currentStepIndex === null
             ? null
             : undefined,
+      totalStepCount:
+        typeof message.totalStepCount === 'number' && Number.isFinite(message.totalStepCount)
+          ? message.totalStepCount
+          : undefined,
+      currentStepType:
+        typeof message.currentStepType === 'string' || message.currentStepType === null
+          ? message.currentStepType
+          : undefined,
+      currentStepName:
+        typeof message.currentStepName === 'string' || message.currentStepName === null
+          ? message.currentStepName
+          : undefined,
+      activeTargetJointAngles: parseNullableJointAngles(message.activeTargetJointAngles),
+      nextTargetJointAngles: parseNullableJointAngles(message.nextTargetJointAngles),
+      queuedTargetJointAngles: parseQueuedTargetJointAngles(message.queuedTargetJointAngles),
       isMoving: typeof message.isMoving === 'boolean' ? message.isMoving : undefined,
     };
   } catch {
@@ -177,6 +198,45 @@ function parseAxes(rawAxes: object | undefined): RobotTelemetryData['axes'] {
   }
 
   return axes;
+}
+
+function parseNullableJointAngles(value: unknown): Partial<JointAngles> | null | undefined {
+  if (value === null) {
+    return null;
+  }
+
+  if (!isObject(value)) {
+    return undefined;
+  }
+
+  const angles = parseJointAngles(value);
+  return Object.keys(angles).length > 0 ? angles : undefined;
+}
+
+function parseQueuedTargetJointAngles(value: unknown): Partial<JointAngles>[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const targets = value
+    .filter(isObject)
+    .map(parseJointAngles)
+    .filter((angles) => Object.keys(angles).length > 0);
+
+  return targets.length > 0 ? targets : undefined;
+}
+
+function parseJointAngles(rawAngles: Record<string, unknown>): Partial<JointAngles> {
+  const angles: Partial<JointAngles> = {};
+
+  for (const jointName of jointNames) {
+    const angle = rawAngles[jointName];
+    if (isFiniteNumber(angle)) {
+      angles[jointName] = angle;
+    }
+  }
+
+  return angles;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

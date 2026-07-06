@@ -482,6 +482,7 @@ input[type="range"] {
 }
 
 .telemetry-panel,
+.program-preview-panel,
 .note-panel {
   display: flex;
   flex-direction: column;
@@ -673,6 +674,25 @@ input[type="range"] {
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.program-preview-panel {
+  padding: 12px;
+  border: 1px solid rgba(124, 243, 213, 0.18);
+  border-radius: 8px;
+  background: rgba(10, 20, 28, 0.64);
+}
+
+.program-preview-message {
+  margin: 0;
+  color: #ffd39b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.program-preview-message[data-preview-state="available"] {
+  color: #b7f7c6;
 }
 
 @media (max-width: 860px) {
