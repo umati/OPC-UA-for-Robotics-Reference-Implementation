@@ -1,3 +1,8 @@
 bin/
 obj/
 .vs/
+
+# UA-ModelCompiler temporary output and logs.
+generated/opcua-robotics/**/*.log
+generated/opcua-robotics/**/*.tmp
+generated/opcua-robotics/**/*.bak

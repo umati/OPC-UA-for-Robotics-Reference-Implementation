@@ -8,6 +8,10 @@
 - Simple RemoteControl methods.
 - JSON robot program contracts.
 - RemotePrograms method exposure.
+- UA-ModelCompiler generation script.
+- Installed or built UA-ModelCompiler.
+- Generated Robotics model classes.
+- Generated Robotics model project.
 
 ## Next
 
@@ -15,6 +19,7 @@
 - Load OPC UA DI NodeSet.
 - Load OPC UA Robotics NodeSet.
 - Map temporary demo nodes to official Robotics concepts.
+- Instantiate official Robotics model objects.
 
 ## Later
 

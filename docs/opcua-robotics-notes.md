@@ -33,3 +33,17 @@ The simulation should use physically plausible joint-space motion, including joi
 | Model | SixAxisRobot |
 | SerialNumber | SIM-6AXIS-0001 |
 | ProductCode | REF-SIX-AXIS-SIM |
+
+## Model Generation Strategy
+
+UA-ModelCompiler will generate .NET classes and constants from the official OPC UA NodeSet files for OPC UA Robotics v1.02.
+
+Generated code will be isolated in a separate generated project and should not be manually edited.
+
+The generation script is `tools/modelcompiler/generate-robotics-model.ps1`. It reads official NodeSet XML files from `src/Robotics.ReferenceServer/NodeSets/` and writes generated output to `generated/opcua-robotics/`.
+
+The current generated model target is OPC UA Robotics. OPC UA DI is included as the required dependency. OPC UA IA and OPC UA Machinery remain future optional integration layers and are not part of the current generation profile.
+
+Generated files are linked into `src/Robotics.OpcUa.RoboticsModel.Generated/` so generated model code remains separate from hand-written server code. The reference server does not reference this generated project yet.
+
+The current temporary demo nodes will later be mapped to the generated Robotics types so the server can instantiate the official Robotics model objects.
