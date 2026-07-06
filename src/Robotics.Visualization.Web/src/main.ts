@@ -27,10 +27,10 @@ const statusOverlay = createStatusOverlay(sceneHost);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x070b10);
-scene.fog = new THREE.Fog(0x070b10, 7, 12);
+scene.fog = new THREE.Fog(0x070b10, 7.5, 13);
 
 const camera = new THREE.PerspectiveCamera(45, sceneHost.clientWidth / sceneHost.clientHeight, 0.1, 100);
-camera.position.set(4.8, 3.35, 4.9);
+camera.position.set(4.9, 3.25, 5.15);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -41,41 +41,45 @@ sceneHost.append(renderer.domElement);
 
 const orbitControls = new OrbitControls(camera, renderer.domElement);
 orbitControls.enableDamping = true;
-orbitControls.target.set(0.75, 1.12, 0.05);
+orbitControls.target.set(0.82, 1.36, 0.02);
 orbitControls.maxPolarAngle = Math.PI * 0.48;
 orbitControls.minDistance = 2.2;
 orbitControls.maxDistance = 9;
 orbitControls.update();
 
-const grid = new THREE.GridHelper(8, 32, 0x4c8ed9, 0x263341);
+const grid = new THREE.GridHelper(8.5, 34, 0x5fa6ff, 0x263341);
 const gridMaterial = grid.material as THREE.Material;
 gridMaterial.transparent = true;
-gridMaterial.opacity = 0.34;
+gridMaterial.opacity = 0.3;
 scene.add(grid);
 
 const worldFrame = createWorldFrame();
 scene.add(worldFrame);
 
-const ambientLight = new THREE.HemisphereLight(0xe8f4ff, 0x111820, 1.65);
+const ambientLight = new THREE.HemisphereLight(0xe8f4ff, 0x111820, 1.5);
 scene.add(ambientLight);
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 2.65);
-keyLight.position.set(4.4, 5.8, 3.1);
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.9);
+keyLight.position.set(4.8, 6.2, 3.4);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.camera.left = -4;
+keyLight.shadow.camera.right = 4;
+keyLight.shadow.camera.top = 4;
+keyLight.shadow.camera.bottom = -4;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x7fb4ff, 0.95);
+const fillLight = new THREE.DirectionalLight(0x7fb4ff, 0.85);
 fillLight.position.set(-3.5, 2.4, -3.7);
 scene.add(fillLight);
 
-const rimLight = new THREE.DirectionalLight(0x7cffd4, 0.52);
-rimLight.position.set(-1.8, 3.8, 3.6);
+const rimLight = new THREE.DirectionalLight(0x7cffd4, 0.68);
+rimLight.position.set(-2.2, 4.1, 3.9);
 scene.add(rimLight);
 
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(8, 8),
-  new THREE.MeshStandardMaterial({ color: 0x0b1118, roughness: 0.86, metalness: 0.08 }),
+  new THREE.PlaneGeometry(9, 9),
+  new THREE.MeshStandardMaterial({ color: 0x0a1016, roughness: 0.82, metalness: 0.12 }),
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
@@ -300,8 +304,8 @@ function replaceRobotModel(result: RobotModelLoadResult): void {
   ui.setModelStatus(result.status, result.message);
 }
 
-function attachToolFrame(modelStatus: RobotModelStatus): void {
-  toolFrame.position.set(modelStatus === 'glbLoaded' ? 0 : 0.48, 0, 0);
+function attachToolFrame(_modelStatus: RobotModelStatus): void {
+  toolFrame.position.set(0, 0, 0);
   robot.toolObject.add(toolFrame);
 }
 

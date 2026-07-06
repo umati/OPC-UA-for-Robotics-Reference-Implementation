@@ -1,6 +1,6 @@
 # Visualization
 
-Visualization V4A is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer`.
+Visualization V4B is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer`.
 
 The browser does not connect to OPC UA directly and does not define robot physics. It renders the latest telemetry snapshot produced by the server simulation.
 
@@ -52,7 +52,7 @@ The heartbeat indicator reports:
 - `Stale` when the WebSocket is connected but no telemetry message has arrived for more than 1 second.
 - `Disconnected` when the WebSocket is not connected.
 
-## V4A Controls
+## V4B Controls
 
 - `Reset Home`: returns the active robot model to the home pose in Manual Mode.
 - `Local Demo`: runs the browser-side demo animation retained from V1. Sliders remain visible but disabled because the local animation owns the pose.
@@ -122,21 +122,38 @@ The expected local GLB rotation axes are:
 - `AxisB`: local Z
 - `AxisT`: local X
 
-The primitive fallback preserves its current visual behavior and uses the same browser-side mapping, including `B` around local Z. If a future GLB uses a different authoring convention, adjust the GLB node pivots and local axes so the named nodes match this contract.
+The primitive fallback uses the same browser-side mapping, including `B` around local Z. If a future GLB uses a different authoring convention, adjust the GLB node pivots and local axes so the named nodes match this contract.
+
+## Visualization V4B: Premium Procedural Fallback Robot
+
+V4B upgrades only the primitive fallback robot visuals. The fallback is still procedural Three.js geometry, but it now presents as a demo-worthy stylized industrial six-axis robot when `public/assets/robots/six-axis-reference.glb` is not available.
+
+The fallback includes:
+
+- A solid pedestal and rotating shoulder column.
+- Cylindrical shoulder, elbow, wrist roll, wrist bend, and tool housings.
+- Capped upper-arm and forearm covers with dark service-spine accents.
+- Subtle circular joint rings and canvas-sprite axis labels for `S`, `L`, `U`, `R`, `B`, and `T`.
+- Professional industrial materials with light body panels, dark joint shells, metallic caps, small accent rings, and subtle emissive status/tool details.
+- A tool-center-point group at the procedural end-effector tip so the path trail and tool frame follow the visible TCP.
+
+The important contract is unchanged: visual mesh complexity is subordinate to the pivot hierarchy. The fallback continues to use the same `S`, `L`, `U`, `R`, `B`, and `T` joint groups and the same rotation mapping as V4A. Manual sliders, Reset Home, Local Demo, Live Telemetry Mode, model reload, grid/frame toggles, and the path trail continue to work through the shared robot model abstraction.
+
+The segmented GLB remains the future high-fidelity path. V4C can replace the procedural meshes with a properly authored GLB as long as the named nodes, pivots, and local axes keep matching the V4A contract.
 
 ## Path Trail and Frames
 
-V4A computes the current tool world position from the active model's tool object after joint updates and during animation frames. For the GLB model this is the `Tool` node. For the primitive fallback this is the existing primitive tool group. Recent positions are stored in a bounded buffer and rendered as a Three.js line, giving a live TCP/tool path without adding browser-side physics.
+V4B computes the current tool world position from the active model's tool object after joint updates and during animation frames. For the GLB model this is the `Tool` node. For the primitive fallback this is the procedural tool-center-point group at the visible end-effector tip. Recent positions are stored in a bounded buffer and rendered as a Three.js line, giving a live TCP/tool path without adding browser-side physics.
 
-The world frame marks the base scene reference. The tool frame is attached to the active end-effector object, so it follows either the GLB `Tool` node or the primitive tool group.
+The world frame marks the base scene reference. The tool frame is attached to the active end-effector object, so it follows either the GLB `Tool` node or the primitive tool-center-point group.
 
 ## Current Scope
 
 - Vite, TypeScript, and Three.js.
 - Perspective camera with orbit controls.
-- Dark scene, grid floor, world coordinate axes, and basic lighting.
+- Dark engineering scene, grid floor, world coordinate axes, shadows, and polished studio-style lighting.
 - Segmented GLB robot loading with primitive fallback.
-- Six-axis placeholder robot built from simple Three.js primitives.
+- Demo-worthy six-axis procedural fallback robot built from Three.js primitives.
 - Kinematic hierarchy for S, L, U, R, B, T, and tool groups.
 - Manual joint sliders with degree values.
 - Local Demo motion retained from V1.
@@ -146,7 +163,7 @@ The world frame marks the base scene reference. The tool frame is attached to th
 - World/base and tool coordinate frame helpers.
 - Side-panel model status and GLB reload control.
 
-## V4A Limitations
+## V4B Limitations
 
 - The WebSocket bridge streams JSON snapshots only; command/control remains through existing server mechanisms.
 - The GLB asset is optional and may not be present in the repository yet.
@@ -158,4 +175,4 @@ The world frame marks the base scene reference. The tool frame is attached to th
 
 ## V4 Plan
 
-After V4A, target frames, ghost pose comparison, and richer program overlays can be added for robot program review and debugging.
+After V4B, target frames, ghost pose comparison, richer program overlays, and the final segmented GLB robot can be added for robot program review and debugging.

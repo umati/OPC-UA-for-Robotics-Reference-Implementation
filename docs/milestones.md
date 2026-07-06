@@ -25,6 +25,7 @@
 - Visualization V2: live telemetry WebSocket connection.
 - Visualization V3: path trail, coordinate frames, polished live overlay.
 - Visualization V4A: segmented GLB loading with primitive fallback.
+- Visualization V4B: premium procedural fallback robot.
 
 ## Next
 
