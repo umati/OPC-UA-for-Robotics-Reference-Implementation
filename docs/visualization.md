@@ -1,10 +1,26 @@
 # Visualization
 
-Visualization V1 is a browser-based, offline 3D robot viewer for checking the robot hierarchy, pivots, joint axes, camera, lighting, and controls before live telemetry is added.
+Visualization V2 is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer`.
 
-The V1 browser app is manual-slider only. It does not connect to OPC UA, does not use WebSocket telemetry, and does not define robot physics for the final architecture.
+The browser does not connect to OPC UA directly and does not define robot physics. It renders the latest telemetry snapshot produced by the server simulation.
 
-## Run V1
+## Run the Reference Server
+
+From the repository root:
+
+```powershell
+dotnet run --project src/Robotics.ReferenceServer
+```
+
+The server starts the OPC UA endpoint and, when available, the telemetry WebSocket endpoint:
+
+```text
+Telemetry WebSocket endpoint: ws://localhost:48080/telemetry
+```
+
+If the telemetry socket cannot bind, the server prints a warning and keeps the OPC UA server running.
+
+## Run the Visualization
 
 From the visualization project folder:
 
@@ -16,6 +32,20 @@ npm run dev
 
 Then open the local URL printed by Vite.
 
+## Connect Live Telemetry
+
+1. Start `Robotics.ReferenceServer`.
+2. Start the visualization with Vite.
+3. In the browser side panel, keep the WebSocket URL set to:
+
+```text
+ws://localhost:48080/telemetry
+```
+
+4. Select `Connect`.
+
+When connected, the visualization enters Live Telemetry Mode, disables manual sliders and Local Demo controls, and applies incoming `S`, `L`, `U`, `R`, `B`, and `T` axis positions to the robot model. If the socket disconnects, the last pose remains visible and manual controls become available again.
+
 ## Current Scope
 
 - Vite, TypeScript, and Three.js.
@@ -24,21 +54,18 @@ Then open the local URL printed by Vite.
 - Six-axis placeholder robot built from simple Three.js primitives.
 - Kinematic hierarchy for S, L, U, R, B, T, and tool groups.
 - Manual joint sliders with degree values.
-- Current joint value panel.
-- Reset Home, Demo Motion, and Stop Demo controls.
+- Local Demo motion retained from V1.
+- Live telemetry WebSocket client for `ws://localhost:48080/telemetry`.
+- Telemetry panel for joint position, joint velocity, program state, current step, moving state, and timestamp.
 
-## Current Limitations
+## V2 Limitations
 
-- No OPC UA connection.
-- No WebSocket telemetry.
-- No server-side data binding.
-- No external GLB robot model.
-- No path, target frame, or program visualization.
+- The WebSocket bridge streams JSON snapshots only; command/control remains through existing server mechanisms.
+- The browser uses the placeholder Three.js robot, not an external GLB robot model.
+- Broadcasts repeat the latest server simulation snapshot and do not increase simulation fidelity.
+- Missing or invalid axis fields are ignored by the browser and leave the last valid pose value in place.
+- No path, target frame, ghost pose, or program overlay visualization yet.
 - No physics simulation in the browser.
-
-## V2 Plan
-
-V2 should add a WebSocket telemetry bridge that streams joint values from the reference server or a server-side adapter into the browser. The browser should remain a visualization client and should apply telemetry to the kinematic hierarchy without redefining motion validation or simulation behavior.
 
 ## V3 Plan
 

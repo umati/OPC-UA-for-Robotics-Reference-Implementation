@@ -2,6 +2,7 @@ using Opc.Ua;
 using Opc.Ua.Configuration;
 using Robotics.ReferenceServer.InformationModel;
 using Robotics.ReferenceServer.Simulation;
+using Robotics.ReferenceServer.Telemetry;
 using Robotics.ReferenceServer.Validation;
 using Robotics.Shared;
 
@@ -53,13 +54,17 @@ internal static class Program
 
             Console.WriteLine($"Selected address-space mode: {addressSpaceMode}");
 
-            await application.StartAsync(new RoboticsServer(addressSpaceMode));
+            await using var telemetryServer = new RobotTelemetryWebSocketServer();
+
+            await application.StartAsync(new RoboticsServer(addressSpaceMode, telemetryServer));
+            await telemetryServer.StartAsync();
 
             Console.WriteLine("Robotics reference server started.");
             Console.WriteLine($"Endpoint: {EndpointUrl}");
             Console.WriteLine("Press Ctrl+C to stop.");
 
             completed.Wait();
+            await telemetryServer.StopAsync();
         }
         catch (Exception ex)
         {

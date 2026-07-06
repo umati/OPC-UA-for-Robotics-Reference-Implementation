@@ -97,3 +97,9 @@ This mode exercises the existing `RobotSimulationService` without starting the O
 Motion validation checks bounded physical plausibility and uses tolerance-based settling instead of exact target equality or exact zero velocity. Finite target moves must settle within the configured validation tolerance and timeout; bounded demo-style motion is checked for safety-limit and teleport-like violations over a fixed simulated duration.
 
 Axis motion snaps to the target only inside a small final tolerance and only when the remaining velocity can be removed within the current integration step without exceeding the axis acceleration limit. This avoids residual limit-cycle motion near the target while preserving acceleration-limited movement outside the final settling window.
+
+## Browser Visualization Telemetry
+
+Visualization V2 consumes server telemetry from `ws://localhost:48080/telemetry` while the reference server is running.
+
+The browser visualization does not define robot physics, motion validation, program execution, or simulation behavior. It renders the current joint positions and status fields emitted by the server-side simulation, which remains the source of truth.

@@ -6,6 +6,12 @@ export type JointName = (typeof jointNames)[number];
 
 export type JointAngles = Record<JointName, number>;
 
+export type JointVelocities = Partial<Record<JointName, number>>;
+
+export type VisualizationMode = 'manual' | 'localDemo' | 'liveTelemetry';
+
+export type TelemetryConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+
 export interface JointLimit {
   min: number;
   max: number;
@@ -37,5 +43,15 @@ export interface RobotModel {
 
 export interface UiController {
   setAngles: (angles: JointAngles) => void;
-  setDemoRunning: (isRunning: boolean) => void;
+  setVelocities: (velocities: JointVelocities) => void;
+  setMode: (mode: VisualizationMode) => void;
+  setConnectionStatus: (status: TelemetryConnectionStatus, detail?: string) => void;
+  setManualControlsEnabled: (isEnabled: boolean) => void;
+  setTelemetryDetails: (details: {
+    timestampUtc?: string;
+    currentProgramName?: string | null;
+    programExecutionState?: string;
+    currentStepIndex?: number | null;
+    isMoving?: boolean;
+  }) => void;
 }

@@ -2,12 +2,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import './style.css';
 import { createRobotModel, resetHome, setJointAngles } from './robotModel';
+import { getAxisPositions, getAxisVelocities, RobotTelemetryClient, type RobotTelemetryData } from './telemetryClient';
 import { createRobotUi } from './ui';
 import { homeJointAngles, type JointAngles, type JointName, type UiController } from './types';
 
-// Visualization V1 is intentionally offline and manual-slider driven.
-// V2 will connect this viewer to live server telemetry over WebSocket.
-// The browser view must never become the source of robot physics in the final architecture.
+// The browser renders telemetry only. Robot simulation and program execution stay server-owned.
 
 const sceneHost = requiredElement<HTMLDivElement>('scene');
 const controlsHost = requiredElement<HTMLElement>('controls');
@@ -71,28 +70,76 @@ let jointAngles: JointAngles = { ...homeJointAngles };
 let demoRunning = false;
 let demoStartMs = 0;
 let ui: UiController;
+let liveTelemetryActive = false;
+
+const telemetryClient = new RobotTelemetryClient({
+  onStatusChange(status, detail): void {
+    ui.setConnectionStatus(status, detail);
+
+    if (status === 'connected') {
+      liveTelemetryActive = true;
+      stopDemo();
+      ui.setMode('liveTelemetry');
+      ui.setManualControlsEnabled(false);
+      return;
+    }
+
+    if (status === 'disconnected' || status === 'error') {
+      liveTelemetryActive = false;
+      ui.setManualControlsEnabled(true);
+      ui.setMode(demoRunning ? 'localDemo' : 'manual');
+    }
+  },
+  onTelemetry(message): void {
+    applyLiveTelemetry(message);
+  },
+});
 
 ui = createRobotUi({
   container: controlsHost,
   initialAngles: jointAngles,
   onJointChange(jointName: JointName, value: number): void {
+    if (liveTelemetryActive) {
+      return;
+    }
+
     stopDemo();
     jointAngles = { ...jointAngles, [jointName]: value };
     setJointAngles(robot, jointAngles);
     ui.setAngles(jointAngles);
+    ui.setMode('manual');
   },
   onResetHome(): void {
+    if (liveTelemetryActive) {
+      return;
+    }
+
     stopDemo();
     jointAngles = resetHome(robot);
     ui.setAngles(jointAngles);
+    ui.setVelocities({});
+    ui.setMode('manual');
   },
   onDemoStart(): void {
+    if (liveTelemetryActive) {
+      return;
+    }
+
     demoRunning = true;
     demoStartMs = performance.now();
-    ui.setDemoRunning(true);
+    ui.setMode('localDemo');
   },
   onDemoStop(): void {
     stopDemo();
+  },
+  onTelemetryConnect(url: string): void {
+    stopDemo();
+    ui.setMode('liveTelemetry');
+    ui.setManualControlsEnabled(false);
+    telemetryClient.connect(url);
+  },
+  onTelemetryDisconnect(): void {
+    telemetryClient.disconnect();
   },
 });
 
@@ -117,7 +164,41 @@ function stopDemo(): void {
   }
 
   demoRunning = false;
-  ui.setDemoRunning(false);
+
+  if (!liveTelemetryActive) {
+    ui.setMode('manual');
+  }
+}
+
+function applyLiveTelemetry(message: RobotTelemetryData): void {
+  const telemetryAngles = getAxisPositions(message);
+  const updatedJointAngles = { ...jointAngles };
+  let hasValidPosition = false;
+
+  for (const jointName of Object.keys(telemetryAngles) as JointName[]) {
+    const angle = telemetryAngles[jointName];
+    if (angle === undefined) {
+      continue;
+    }
+
+    updatedJointAngles[jointName] = angle;
+    hasValidPosition = true;
+  }
+
+  if (hasValidPosition) {
+    jointAngles = updatedJointAngles;
+    setJointAngles(robot, jointAngles);
+    ui.setAngles(jointAngles);
+  }
+
+  ui.setVelocities(getAxisVelocities(message));
+  ui.setTelemetryDetails({
+    timestampUtc: message.timestampUtc,
+    currentProgramName: message.currentProgramName,
+    programExecutionState: message.programExecutionState,
+    currentStepIndex: message.currentStepIndex,
+    isMoving: message.isMoving,
+  });
 }
 
 function demoAngles(seconds: number): JointAngles {

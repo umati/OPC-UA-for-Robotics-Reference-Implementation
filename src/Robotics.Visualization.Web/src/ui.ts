@@ -1,4 +1,14 @@
-import { jointLimits, jointNames, type JointAngles, type JointName, type UiController } from './types';
+import {
+  jointLimits,
+  jointNames,
+  type JointAngles,
+  type JointName,
+  type JointVelocities,
+  type TelemetryConnectionStatus,
+  type UiController,
+  type VisualizationMode,
+} from './types';
+import { defaultTelemetryUrl } from './telemetryClient';
 
 interface UiOptions {
   container: HTMLElement;
@@ -7,11 +17,14 @@ interface UiOptions {
   onResetHome: () => void;
   onDemoStart: () => void;
   onDemoStop: () => void;
+  onTelemetryConnect: (url: string) => void;
+  onTelemetryDisconnect: () => void;
 }
 
 export function createRobotUi(options: UiOptions): UiController {
   const sliderInputs = new Map<JointName, HTMLInputElement>();
   const valueOutputs = new Map<JointName, HTMLOutputElement>();
+  const velocityOutputs = new Map<JointName, HTMLElement>();
 
   options.container.innerHTML = '';
 
@@ -20,17 +33,54 @@ export function createRobotUi(options: UiOptions): UiController {
   header.innerHTML = `
     <div>
       <p class="eyebrow">OPC UA Robotics</p>
-      <h1>Visualization V1</h1>
+      <h1>Visualization V2</h1>
     </div>
-    <span class="status-pill" data-demo-status>Offline Manual</span>
+    <span class="status-pill" data-mode-status>Manual Mode</span>
   `;
   options.container.append(header);
+
+  const connectionSection = document.createElement('section');
+  connectionSection.className = 'connection-panel';
+  connectionSection.setAttribute('aria-label', 'Live telemetry connection');
+
+  const urlLabel = document.createElement('label');
+  urlLabel.className = 'url-field';
+
+  const urlLabelText = document.createElement('span');
+  urlLabelText.textContent = 'WebSocket URL';
+
+  const urlInput = document.createElement('input');
+  urlInput.type = 'url';
+  urlInput.value = defaultTelemetryUrl;
+  urlInput.spellcheck = false;
+
+  urlLabel.append(urlLabelText, urlInput);
+
+  const connectionActions = document.createElement('div');
+  connectionActions.className = 'button-row';
+
+  const connectButton = button('Connect', 'primary');
+  const disconnectButton = button('Disconnect', 'secondary');
+  disconnectButton.disabled = true;
+
+  connectButton.addEventListener('click', () => options.onTelemetryConnect(urlInput.value));
+  disconnectButton.addEventListener('click', options.onTelemetryDisconnect);
+
+  connectionActions.append(connectButton, disconnectButton);
+
+  const connectionStatus = document.createElement('p');
+  connectionStatus.className = 'connection-status';
+  connectionStatus.dataset.connectionStatus = 'true';
+  connectionStatus.textContent = 'disconnected';
+
+  connectionSection.append(urlLabel, connectionActions, connectionStatus);
+  options.container.append(connectionSection);
 
   const actions = document.createElement('div');
   actions.className = 'action-row';
 
   const resetButton = button('Reset Home', 'secondary');
-  const demoButton = button('Demo Motion', 'primary');
+  const demoButton = button('Local Demo', 'primary');
   const stopButton = button('Stop Demo', 'secondary');
 
   resetButton.addEventListener('click', options.onResetHome);
@@ -43,6 +93,12 @@ export function createRobotUi(options: UiOptions): UiController {
   const sliderSection = document.createElement('section');
   sliderSection.className = 'control-section';
   sliderSection.setAttribute('aria-label', 'Manual joint sliders');
+
+  const manualStatus = document.createElement('p');
+  manualStatus.className = 'manual-status';
+  manualStatus.dataset.manualStatus = 'true';
+  manualStatus.textContent = 'Manual joint controls';
+  sliderSection.append(manualStatus);
 
   for (const jointName of jointNames) {
     const row = document.createElement('label');
@@ -82,8 +138,8 @@ export function createRobotUi(options: UiOptions): UiController {
 
   const telemetry = document.createElement('section');
   telemetry.className = 'telemetry-panel';
-  telemetry.setAttribute('aria-label', 'Current joint values');
-  telemetry.innerHTML = '<h2>Joint Values</h2>';
+  telemetry.setAttribute('aria-label', 'Current telemetry values');
+  telemetry.innerHTML = '<h2>Telemetry</h2>';
 
   const telemetryGrid = document.createElement('dl');
   telemetryGrid.className = 'telemetry-grid';
@@ -96,17 +152,41 @@ export function createRobotUi(options: UiOptions): UiController {
     term.textContent = jointName;
 
     const detail = document.createElement('dd');
-    detail.dataset.telemetryJoint = jointName;
-    detail.textContent = formatDegrees(options.initialAngles[jointName]);
 
+    const position = document.createElement('span');
+    position.dataset.telemetryJoint = jointName;
+    position.textContent = formatDegrees(options.initialAngles[jointName]);
+
+    const velocity = document.createElement('small');
+    velocity.dataset.telemetryVelocity = jointName;
+    velocity.textContent = formatVelocity(0);
+
+    detail.append(position, velocity);
     cell.append(term, detail);
     telemetryGrid.append(cell);
+    velocityOutputs.set(jointName, velocity);
   }
 
   telemetry.append(telemetryGrid);
+
+  const programGrid = document.createElement('dl');
+  programGrid.className = 'program-grid';
+  programGrid.innerHTML = `
+    <div><dt>Program</dt><dd data-program-name>-</dd></div>
+    <div><dt>State</dt><dd data-program-state>-</dd></div>
+    <div><dt>Step</dt><dd data-program-step>-</dd></div>
+    <div><dt>Moving</dt><dd data-moving-state>-</dd></div>
+    <div class="wide"><dt>Timestamp</dt><dd data-timestamp>-</dd></div>
+  `;
+  telemetry.append(programGrid);
   options.container.append(telemetry);
 
-  const status = options.container.querySelector<HTMLElement>('[data-demo-status]');
+  const modeStatus = options.container.querySelector<HTMLElement>('[data-mode-status]');
+  const programName = options.container.querySelector<HTMLElement>('[data-program-name]');
+  const programState = options.container.querySelector<HTMLElement>('[data-program-state]');
+  const programStep = options.container.querySelector<HTMLElement>('[data-program-step]');
+  const movingState = options.container.querySelector<HTMLElement>('[data-moving-state]');
+  const timestamp = options.container.querySelector<HTMLElement>('[data-timestamp]');
 
   return {
     setAngles(angles: JointAngles): void {
@@ -129,16 +209,74 @@ export function createRobotUi(options: UiOptions): UiController {
         }
       }
     },
-    setDemoRunning(isRunning: boolean): void {
-      if (!status) {
+    setVelocities(velocities: JointVelocities): void {
+      for (const jointName of jointNames) {
+        const velocity = velocityOutputs.get(jointName);
+        if (velocity) {
+          velocity.textContent = formatVelocity(velocities[jointName] ?? 0);
+        }
+      }
+    },
+    setMode(mode: VisualizationMode): void {
+      if (!modeStatus) {
         return;
       }
 
-      status.textContent = isRunning ? 'Local Demo' : 'Offline Manual';
-      status.classList.toggle('is-running', isRunning);
+      modeStatus.textContent = modeLabels[mode];
+      modeStatus.classList.toggle('is-running', mode === 'localDemo');
+      modeStatus.classList.toggle('is-live', mode === 'liveTelemetry');
+    },
+    setConnectionStatus(status: TelemetryConnectionStatus, detail?: string): void {
+      connectionStatus.textContent = detail ? `${status}: ${detail}` : status;
+      connectionStatus.dataset.status = status;
+      connectButton.disabled = status === 'connecting' || status === 'connected';
+      disconnectButton.disabled = status !== 'connecting' && status !== 'connected';
+      urlInput.disabled = status === 'connecting' || status === 'connected';
+    },
+    setManualControlsEnabled(isEnabled: boolean): void {
+      for (const slider of sliderInputs.values()) {
+        slider.disabled = !isEnabled;
+      }
+
+      resetButton.disabled = !isEnabled;
+      demoButton.disabled = !isEnabled;
+      stopButton.disabled = !isEnabled;
+      manualStatus.textContent = isEnabled
+        ? 'Manual joint controls'
+        : 'Manual controls overridden by live telemetry';
+      sliderSection.classList.toggle('is-disabled', !isEnabled);
+    },
+    setTelemetryDetails(details): void {
+      if (programName) {
+        programName.textContent = details.currentProgramName || '-';
+      }
+
+      if (programState) {
+        programState.textContent = details.programExecutionState || '-';
+      }
+
+      if (programStep) {
+        programStep.textContent = details.currentStepIndex === null || details.currentStepIndex === undefined
+          ? '-'
+          : details.currentStepIndex.toString();
+      }
+
+      if (movingState) {
+        movingState.textContent = details.isMoving === undefined ? '-' : details.isMoving ? 'true' : 'false';
+      }
+
+      if (timestamp) {
+        timestamp.textContent = details.timestampUtc || '-';
+      }
     },
   };
 }
+
+const modeLabels: Record<VisualizationMode, string> = {
+  manual: 'Manual Mode',
+  localDemo: 'Local Demo Mode',
+  liveTelemetry: 'Live Telemetry Mode',
+};
 
 function button(label: string, variant: 'primary' | 'secondary'): HTMLButtonElement {
   const element = document.createElement('button');
@@ -151,4 +289,9 @@ function button(label: string, variant: 'primary' | 'secondary'): HTMLButtonElem
 function formatDegrees(value: number): string {
   const rounded = Math.abs(value) < 0.05 ? 0 : value;
   return `${rounded.toFixed(0)} deg`;
+}
+
+function formatVelocity(value: number): string {
+  const rounded = Math.abs(value) < 0.005 ? 0 : value;
+  return `${rounded.toFixed(1)} deg/s`;
 }

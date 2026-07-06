@@ -22,6 +22,7 @@
 - Address-space mode selection for Temporary, Official, and Both models.
 - Motion validation report mode.
 - Visualization V1: manual-slider browser viewer.
+- Visualization V2: live telemetry WebSocket connection.
 
 ## Next
 
@@ -38,4 +39,4 @@
 - Expose asset management variables using the official information model.
 - Expose condition monitoring variables using the official information model.
 - Build client dashboard.
-- Extend 3D visualization with live telemetry and program overlays.
+- Extend 3D visualization with path curves, target frames, ghost pose, and program overlays.

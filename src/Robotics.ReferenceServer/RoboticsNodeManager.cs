@@ -2,6 +2,7 @@ using Opc.Ua;
 using Opc.Ua.Server;
 using Robotics.ReferenceServer.InformationModel;
 using Robotics.ReferenceServer.Simulation;
+using Robotics.ReferenceServer.Telemetry;
 using Robotics.Shared;
 using System.Text.Json;
 
@@ -22,6 +23,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private readonly RobotProgramExecutor _programExecutor;
     private readonly RobotNodeBinder _robotNodeBinder = new();
     private readonly RobotAddressSpaceMode _addressSpaceMode;
+    private readonly IRobotTelemetryPublisher? _telemetryPublisher;
     private readonly List<BaseVariableState> _telemetryVariables = [];
     private readonly Dictionary<RobotAxisName, AxisVariableSet> _axisVariables = [];
 
@@ -38,7 +40,8 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     public RoboticsNodeManager(
         IServerInternal server,
         ApplicationConfiguration configuration,
-        RobotAddressSpaceMode addressSpaceMode = RobotAddressSpaceMode.Both)
+        RobotAddressSpaceMode addressSpaceMode = RobotAddressSpaceMode.Both,
+        IRobotTelemetryPublisher? telemetryPublisher = null)
         : base(
             server,
             configuration,
@@ -48,6 +51,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             NodeSetLoader.InstanceNamespaceUri)
     {
         _addressSpaceMode = addressSpaceMode;
+        _telemetryPublisher = telemetryPublisher;
         _simulationService = new RobotSimulationService();
         _programExecutor = new RobotProgramExecutor(_simulationService);
         SystemContext.NodeIdFactory = this;
@@ -79,8 +83,14 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
                 "RemoteControl and RemotePrograms are available only in Temporary/Both mode until official Robotics remote-operation mapping is implemented.");
         }
 
-        RefreshTelemetryVariables(_simulationService.GetSnapshot());
         SetStartupJointTarget();
+
+        RobotTelemetrySnapshot startupRobotSnapshot = _simulationService.GetSnapshot();
+        RobotProgramExecutionSnapshot startupProgramSnapshot = _programExecutor.GetSnapshot();
+        RefreshTelemetryVariables(startupRobotSnapshot);
+        RefreshRemoteProgramStatus(startupProgramSnapshot);
+        _telemetryPublisher?.Publish(startupRobotSnapshot, startupProgramSnapshot);
+
         StartSimulationUpdates();
     }
 
@@ -838,8 +848,12 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
 
             _programExecutor.Update(elapsed);
             _simulationService.Update(elapsed);
-            RefreshTelemetryVariables(_simulationService.GetSnapshot());
-            RefreshRemoteProgramStatus(_programExecutor.GetSnapshot());
+
+            RobotTelemetrySnapshot robotSnapshot = _simulationService.GetSnapshot();
+            RobotProgramExecutionSnapshot programSnapshot = _programExecutor.GetSnapshot();
+            RefreshTelemetryVariables(robotSnapshot);
+            RefreshRemoteProgramStatus(programSnapshot);
+            _telemetryPublisher?.Publish(robotSnapshot, programSnapshot);
 
             foreach (BaseVariableState variable in _telemetryVariables)
             {
