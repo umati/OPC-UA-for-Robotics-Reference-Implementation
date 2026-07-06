@@ -1,10 +1,10 @@
 using Opc.Ua;
 using Opc.Ua.Server;
+using Robotics.ReferenceServer.ControlBridge;
 using Robotics.ReferenceServer.InformationModel;
 using Robotics.ReferenceServer.Simulation;
 using Robotics.ReferenceServer.Telemetry;
 using Robotics.Shared;
-using System.Text.Json;
 
 namespace Robotics.ReferenceServer;
 
@@ -12,15 +12,10 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
 {
     private const string NamespaceUri = "urn:RoboticsReferenceServer:Robotics";
     private static readonly TimeSpan SimulationUpdateInterval = TimeSpan.FromMilliseconds(100);
-    private static readonly IReadOnlyDictionary<string, string> SampleProgramFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["pick-and-place-demo"] = "pick-and-place-demo.json",
-        ["axis-range-demo"] = "axis-range-demo.json"
-    };
-    private static readonly JsonSerializerOptions ProgramJsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly RobotSimulationService _simulationService;
     private readonly RobotProgramExecutor _programExecutor;
+    private readonly RobotControlCommandService _controlCommands;
     private readonly RobotNodeBinder _robotNodeBinder = new();
     private readonly RobotAddressSpaceMode _addressSpaceMode;
     private readonly IRobotTelemetryPublisher? _telemetryPublisher;
@@ -41,7 +36,8 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IServerInternal server,
         ApplicationConfiguration configuration,
         RobotAddressSpaceMode addressSpaceMode = RobotAddressSpaceMode.Both,
-        IRobotTelemetryPublisher? telemetryPublisher = null)
+        IRobotTelemetryPublisher? telemetryPublisher = null,
+        RobotControlBridgeServiceRegistry? controlBridgeServiceRegistry = null)
         : base(
             server,
             configuration,
@@ -54,6 +50,13 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         _telemetryPublisher = telemetryPublisher;
         _simulationService = new RobotSimulationService();
         _programExecutor = new RobotProgramExecutor(_simulationService);
+        _controlCommands = new RobotControlCommandService(
+            _simulationService,
+            _programExecutor,
+            Lock,
+            UpdateRemoteControlStatus,
+            UpdateRemoteProgramCommandStatus);
+        controlBridgeServiceRegistry?.SetCommandService(_controlCommands);
         SystemContext.NodeIdFactory = this;
     }
 
@@ -424,40 +427,25 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     {
         if (inputArguments.Count != 6)
         {
-            lock (Lock)
-            {
-                UpdateRemoteControlStatus("MoveJoints", false, "MoveJoints requires six joint target inputs.");
-            }
-
+            _controlCommands.RejectMoveJoints("MoveJoints requires six joint target inputs.");
             return StatusCodes.BadInvalidArgument;
         }
 
         try
         {
-            lock (Lock)
-            {
-                _simulationService.SetJointTargets(
-                [
-                    new RobotJointTarget { AxisName = RobotAxisName.S, TargetPositionDegrees = Convert.ToDouble(inputArguments[0]) },
-                    new RobotJointTarget { AxisName = RobotAxisName.L, TargetPositionDegrees = Convert.ToDouble(inputArguments[1]) },
-                    new RobotJointTarget { AxisName = RobotAxisName.U, TargetPositionDegrees = Convert.ToDouble(inputArguments[2]) },
-                    new RobotJointTarget { AxisName = RobotAxisName.R, TargetPositionDegrees = Convert.ToDouble(inputArguments[3]) },
-                    new RobotJointTarget { AxisName = RobotAxisName.B, TargetPositionDegrees = Convert.ToDouble(inputArguments[4]) },
-                    new RobotJointTarget { AxisName = RobotAxisName.T, TargetPositionDegrees = Convert.ToDouble(inputArguments[5]) }
-                ]);
+            RobotControlCommandResult result = _controlCommands.MoveJoints(
+                Convert.ToDouble(inputArguments[0]),
+                Convert.ToDouble(inputArguments[1]),
+                Convert.ToDouble(inputArguments[2]),
+                Convert.ToDouble(inputArguments[3]),
+                Convert.ToDouble(inputArguments[4]),
+                Convert.ToDouble(inputArguments[5]));
 
-                UpdateRemoteControlStatus("MoveJoints", true, "Joint targets accepted.");
-            }
-
-            return ServiceResult.Good;
+            return ToServiceResult(result);
         }
         catch (Exception exception) when (exception is InvalidCastException or FormatException or OverflowException)
         {
-            lock (Lock)
-            {
-                UpdateRemoteControlStatus("MoveJoints", false, "MoveJoints inputs must be double values.");
-            }
-
+            _controlCommands.RejectMoveJoints("MoveJoints inputs must be double values.");
             return StatusCodes.BadInvalidArgument;
         }
     }
@@ -468,22 +456,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        lock (Lock)
-        {
-            _simulationService.SetJointTargets(
-            [
-                new RobotJointTarget { AxisName = RobotAxisName.S, TargetPositionDegrees = 0 },
-                new RobotJointTarget { AxisName = RobotAxisName.L, TargetPositionDegrees = 0 },
-                new RobotJointTarget { AxisName = RobotAxisName.U, TargetPositionDegrees = 0 },
-                new RobotJointTarget { AxisName = RobotAxisName.R, TargetPositionDegrees = 0 },
-                new RobotJointTarget { AxisName = RobotAxisName.B, TargetPositionDegrees = 0 },
-                new RobotJointTarget { AxisName = RobotAxisName.T, TargetPositionDegrees = 0 }
-            ]);
-
-            UpdateRemoteControlStatus("ResetToHome", true, "Home joint targets accepted.");
-        }
-
-        return ServiceResult.Good;
+        return ToServiceResult(_controlCommands.ResetToHome());
     }
 
     private ServiceResult OnStartDemoMotion(
@@ -492,22 +465,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        lock (Lock)
-        {
-            _simulationService.SetJointTargets(
-            [
-                new RobotJointTarget { AxisName = RobotAxisName.S, TargetPositionDegrees = 45 },
-                new RobotJointTarget { AxisName = RobotAxisName.L, TargetPositionDegrees = -30 },
-                new RobotJointTarget { AxisName = RobotAxisName.U, TargetPositionDegrees = 60 },
-                new RobotJointTarget { AxisName = RobotAxisName.R, TargetPositionDegrees = 20 },
-                new RobotJointTarget { AxisName = RobotAxisName.B, TargetPositionDegrees = 15 },
-                new RobotJointTarget { AxisName = RobotAxisName.T, TargetPositionDegrees = 90 }
-            ]);
-
-            UpdateRemoteControlStatus("StartDemoMotion", true, "Demo joint targets accepted.");
-        }
-
-        return ServiceResult.Good;
+        return ToServiceResult(_controlCommands.StartDemoMotion());
     }
 
     private ServiceResult OnStopMotion(
@@ -516,13 +474,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        lock (Lock)
-        {
-            _simulationService.StopMotion();
-            UpdateRemoteControlStatus("StopMotion", true, "Stop motion accepted.");
-        }
-
-        return ServiceResult.Good;
+        return ToServiceResult(_controlCommands.StopMotion());
     }
 
     private ServiceResult OnLoadProgramFromJson(
@@ -531,32 +483,8 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        if (inputArguments.Count != 1 || inputArguments[0] is not string programJson || string.IsNullOrWhiteSpace(programJson))
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus("LoadProgramFromJson", false, "LoadProgramFromJson requires a non-empty ProgramJson string.");
-            }
-
-            return StatusCodes.BadInvalidArgument;
-        }
-
-        RobotProgram? program;
-        try
-        {
-            program = JsonSerializer.Deserialize<RobotProgram>(programJson, ProgramJsonOptions);
-        }
-        catch (JsonException exception)
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus("LoadProgramFromJson", false, $"ProgramJson is not valid JSON: {exception.Message}");
-            }
-
-            return StatusCodes.BadInvalidArgument;
-        }
-
-        return LoadProgram("LoadProgramFromJson", program, "ProgramJson accepted.");
+        string? programJson = inputArguments.Count == 1 ? inputArguments[0] as string : null;
+        return ToServiceResult(_controlCommands.LoadProgramFromJson(programJson));
     }
 
     private ServiceResult OnLoadSampleProgram(
@@ -565,64 +493,8 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        if (inputArguments.Count != 1 || inputArguments[0] is not string sampleProgramName || string.IsNullOrWhiteSpace(sampleProgramName))
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, "LoadSampleProgram requires a non-empty SampleProgramName string.");
-            }
-
-            return StatusCodes.BadInvalidArgument;
-        }
-
-        string normalizedName = NormalizeSampleProgramName(sampleProgramName);
-        if (!SampleProgramFiles.TryGetValue(normalizedName, out string? fileName))
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program '{sampleProgramName}' is not supported.");
-            }
-
-            return StatusCodes.BadInvalidArgument;
-        }
-
-        string? sampleProgramPath = FindSampleProgramPath(fileName);
-        if (sampleProgramPath is null)
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program file '{fileName}' was not found.");
-            }
-
-            return StatusCodes.BadNotFound;
-        }
-
-        RobotProgram? program;
-        try
-        {
-            string programJson = File.ReadAllText(sampleProgramPath);
-            program = JsonSerializer.Deserialize<RobotProgram>(programJson, ProgramJsonOptions);
-        }
-        catch (IOException exception)
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program file could not be read: {exception.Message}");
-            }
-
-            return StatusCodes.BadUnexpectedError;
-        }
-        catch (JsonException exception)
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus("LoadSampleProgram", false, $"Sample program file is not valid JSON: {exception.Message}");
-            }
-
-            return StatusCodes.BadInvalidArgument;
-        }
-
-        return LoadProgram("LoadSampleProgram", program, $"Sample program '{normalizedName}' accepted.");
+        string? sampleProgramName = inputArguments.Count == 1 ? inputArguments[0] as string : null;
+        return ToServiceResult(_controlCommands.LoadSampleProgram(sampleProgramName));
     }
 
     private ServiceResult OnStartProgram(
@@ -631,16 +503,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        lock (Lock)
-        {
-            bool accepted = _programExecutor.Start();
-            string message = accepted
-                ? "Program start accepted."
-                : GetProgramCommandRejectionMessage("Program start was rejected.");
-
-            UpdateRemoteProgramCommandStatus("StartProgram", accepted, message);
-            return accepted ? ServiceResult.Good : StatusCodes.BadInvalidState;
-        }
+        return ToServiceResult(_controlCommands.StartProgram());
     }
 
     private ServiceResult OnPauseProgram(
@@ -649,21 +512,8 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        lock (Lock)
-        {
-            RobotProgramExecutionState currentState = _programExecutor.State;
-            bool accepted = _programExecutor.Pause();
-            string message = accepted
-                ? "Program pause accepted."
-                : $"Program pause was rejected because the program is {currentState}, not Running.";
-
-            UpdateRemoteProgramCommandStatus(
-                "PauseProgram",
-                accepted,
-                message);
-
-            return ServiceResult.Good;
-        }
+        _controlCommands.PauseProgram();
+        return ServiceResult.Good;
     }
 
     private ServiceResult OnResumeProgram(
@@ -672,16 +522,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        lock (Lock)
-        {
-            bool accepted = _programExecutor.Resume();
-            UpdateRemoteProgramCommandStatus(
-                "ResumeProgram",
-                accepted,
-                accepted ? "Program resume accepted." : "Program resume was rejected because the program is not paused.");
-
-            return accepted ? ServiceResult.Good : StatusCodes.BadInvalidState;
-        }
+        return ToServiceResult(_controlCommands.ResumeProgram());
     }
 
     private ServiceResult OnStopProgram(
@@ -690,35 +531,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         IList<object> inputArguments,
         IList<object> outputArguments)
     {
-        lock (Lock)
-        {
-            _programExecutor.Stop();
-            UpdateRemoteProgramCommandStatus("StopProgram", true, "Program stop accepted.");
-            return ServiceResult.Good;
-        }
-    }
-
-    private ServiceResult LoadProgram(string commandName, RobotProgram? program, string acceptedMessage)
-    {
-        RobotProgramValidationResult validationResult = RobotProgramValidator.Validate(program);
-        if (!validationResult.IsValid)
-        {
-            lock (Lock)
-            {
-                UpdateRemoteProgramCommandStatus(commandName, false, string.Join(" ", validationResult.ErrorMessages));
-            }
-
-            return StatusCodes.BadInvalidArgument;
-        }
-
-        lock (Lock)
-        {
-            RobotProgramValidationResult loadResult = _programExecutor.LoadProgram(program!);
-            bool accepted = loadResult.IsValid;
-            string message = accepted ? acceptedMessage : string.Join(" ", loadResult.ErrorMessages);
-            UpdateRemoteProgramCommandStatus(commandName, accepted, message);
-            return accepted ? ServiceResult.Good : StatusCodes.BadInvalidArgument;
-        }
+        return ToServiceResult(_controlCommands.StopProgram());
     }
 
     private void UpdateRemoteControlStatus(string commandName, bool accepted, string message)
@@ -793,31 +606,21 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         };
     }
 
-    private static string NormalizeSampleProgramName(string sampleProgramName)
+    private static ServiceResult ToServiceResult(RobotControlCommandResult result)
     {
-        string trimmedName = sampleProgramName.Trim();
-        return trimmedName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
-            ? trimmedName[..^".json".Length]
-            : trimmedName;
-    }
+        if (result.Accepted)
+        {
+            return ServiceResult.Good;
+        }
 
-    private static string? FindSampleProgramPath(string fileName)
-    {
-        string relativePath = Path.Combine("RobotPrograms", "SamplePrograms", fileName);
-        string[] candidatePaths =
-        [
-            Path.Combine(AppContext.BaseDirectory, relativePath),
-            Path.Combine(Directory.GetCurrentDirectory(), "src", "Robotics.ReferenceServer", relativePath),
-            Path.Combine(Directory.GetCurrentDirectory(), relativePath)
-        ];
-
-        return candidatePaths.FirstOrDefault(File.Exists);
-    }
-
-    private string GetProgramCommandRejectionMessage(string fallbackMessage)
-    {
-        string? lastErrorMessage = _programExecutor.LastErrorMessage;
-        return string.IsNullOrWhiteSpace(lastErrorMessage) ? fallbackMessage : lastErrorMessage;
+        return result.FailureKind switch
+        {
+            RobotControlCommandFailureKind.InvalidArgument => StatusCodes.BadInvalidArgument,
+            RobotControlCommandFailureKind.InvalidState => StatusCodes.BadInvalidState,
+            RobotControlCommandFailureKind.NotFound => StatusCodes.BadNotFound,
+            RobotControlCommandFailureKind.Unexpected => StatusCodes.BadUnexpectedError,
+            _ => StatusCodes.BadUnexpectedError
+        };
     }
 
     private void SetStartupJointTarget()

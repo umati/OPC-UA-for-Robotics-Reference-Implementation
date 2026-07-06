@@ -1,5 +1,6 @@
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using Robotics.ReferenceServer.ControlBridge;
 using Robotics.ReferenceServer.InformationModel;
 using Robotics.ReferenceServer.Simulation;
 using Robotics.ReferenceServer.Telemetry;
@@ -54,9 +55,10 @@ internal static class Program
 
             Console.WriteLine($"Selected address-space mode: {addressSpaceMode}");
 
-            await using var telemetryServer = new RobotTelemetryWebSocketServer();
+            var controlBridgeServiceRegistry = new RobotControlBridgeServiceRegistry();
+            await using var telemetryServer = new RobotTelemetryWebSocketServer(controlBridgeServiceRegistry);
 
-            await application.StartAsync(new RoboticsServer(addressSpaceMode, telemetryServer));
+            await application.StartAsync(new RoboticsServer(addressSpaceMode, telemetryServer, controlBridgeServiceRegistry));
             await telemetryServer.StartAsync();
 
             Console.WriteLine("Robotics reference server started.");

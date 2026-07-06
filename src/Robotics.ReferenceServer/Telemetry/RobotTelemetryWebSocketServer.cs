@@ -1,4 +1,5 @@
 using Robotics.ReferenceServer.Simulation;
+using Robotics.ReferenceServer.ControlBridge;
 using Robotics.Shared;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
@@ -20,6 +21,7 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
     private readonly string _host;
     private readonly int _port;
     private readonly string _path;
+    private readonly RobotControlBridgeHttpHandler _controlBridgeHandler;
     private readonly CancellationTokenSource _shutdown = new();
 
     private readonly List<TcpListener> _listeners = [];
@@ -31,6 +33,7 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
     private bool _started;
 
     public RobotTelemetryWebSocketServer(
+        RobotControlBridgeServiceRegistry controlBridgeServiceRegistry,
         string host = "localhost",
         int port = 48080,
         string path = "/telemetry")
@@ -38,10 +41,14 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
         _host = host;
         _port = port;
         _path = NormalizePath(path);
+        _controlBridgeHandler = new RobotControlBridgeHttpHandler(controlBridgeServiceRegistry);
         EndpointUrl = $"ws://{_host}:{_port}{_path}";
+        ControlEndpointUrl = $"http://{_host}:{_port}/control";
     }
 
     public string EndpointUrl { get; }
+
+    public string ControlEndpointUrl { get; }
 
     public Task StartAsync()
     {
@@ -58,6 +65,7 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
             if (_listeners.Count == 0)
             {
                 Console.WriteLine($"Warning: Telemetry WebSocket endpoint failed to start at {EndpointUrl}.");
+                Console.WriteLine($"Warning: Control bridge endpoint failed to start at {ControlEndpointUrl}.");
                 Console.WriteLine("Warning: No loopback listener could bind to the telemetry port.");
                 return Task.CompletedTask;
             }
@@ -67,10 +75,12 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
             _broadcastLoopTask = Task.Run(() => BroadcastLoopAsync(_shutdown.Token));
 
             Console.WriteLine($"Telemetry WebSocket endpoint: {EndpointUrl}");
+            Console.WriteLine($"Control bridge endpoint: {ControlEndpointUrl}");
         }
         catch (Exception exception) when (exception is SocketException or InvalidOperationException)
         {
             Console.WriteLine($"Warning: Telemetry WebSocket endpoint failed to start at {EndpointUrl}.");
+            Console.WriteLine($"Warning: Control bridge endpoint failed to start at {ControlEndpointUrl}.");
             Console.WriteLine($"Warning: {exception.Message}");
         }
 
@@ -182,17 +192,24 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
         {
             tcpClient.NoDelay = true;
             NetworkStream stream = tcpClient.GetStream();
-            string request = await ReadHttpHeaderAsync(stream, cancellationToken).ConfigureAwait(false);
+            RobotControlHttpRequest request = await ReadHttpRequestAsync(stream, cancellationToken).ConfigureAwait(false);
 
             if (!TryCreateHandshakeResponse(request, out string? requestedPath, out byte[]? responseBytes))
             {
-                await WriteHttpResponseAsync(stream, "400 Bad Request", cancellationToken).ConfigureAwait(false);
+                if (request.Path.StartsWith("/control", StringComparison.OrdinalIgnoreCase))
+                {
+                    RobotControlHttpResponse controlResponse = _controlBridgeHandler.Handle(request);
+                    await WriteControlHttpResponseAsync(stream, controlResponse, request, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                await WriteEmptyHttpResponseAsync(stream, "400 Bad Request", cancellationToken).ConfigureAwait(false);
                 return;
             }
 
             if (!string.Equals(requestedPath, _path, StringComparison.OrdinalIgnoreCase))
             {
-                await WriteHttpResponseAsync(stream, "404 Not Found", cancellationToken).ConfigureAwait(false);
+                await WriteEmptyHttpResponseAsync(stream, "404 Not Found", cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -265,46 +282,45 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
         }
     }
 
-    private static async Task<string> ReadHttpHeaderAsync(NetworkStream stream, CancellationToken cancellationToken)
+    private static async Task<RobotControlHttpRequest> ReadHttpRequestAsync(NetworkStream stream, CancellationToken cancellationToken)
     {
         using var buffer = new MemoryStream();
         byte[] chunk = new byte[512];
+        int headerEndIndex = -1;
 
         while (buffer.Length < 8192)
         {
             int read = await stream.ReadAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
             if (read == 0)
             {
-                throw new InvalidDataException("The client disconnected before sending a WebSocket handshake.");
+                throw new InvalidDataException("The client disconnected before sending an HTTP request.");
             }
 
             buffer.Write(chunk, 0, read);
-            string request = Encoding.ASCII.GetString(buffer.ToArray());
-            if (request.Contains("\r\n\r\n", StringComparison.Ordinal))
+            byte[] bufferedBytes = buffer.ToArray();
+            headerEndIndex = IndexOfHeaderEnd(bufferedBytes);
+            if (headerEndIndex >= 0)
             {
-                return request;
+                return await CreateHttpRequestAsync(bufferedBytes, headerEndIndex, stream, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        throw new InvalidDataException("The WebSocket handshake header exceeded the 8 KB limit.");
+        throw new InvalidDataException("The HTTP request header exceeded the 8 KB limit.");
     }
 
-    private static bool TryCreateHandshakeResponse(
-        string request,
-        out string? requestedPath,
-        out byte[]? responseBytes)
+    private static async Task<RobotControlHttpRequest> CreateHttpRequestAsync(
+        byte[] bufferedBytes,
+        int headerEndIndex,
+        NetworkStream stream,
+        CancellationToken cancellationToken)
     {
-        requestedPath = null;
-        responseBytes = null;
-
-        string[] lines = request.Split("\r\n", StringSplitOptions.None);
+        string header = Encoding.ASCII.GetString(bufferedBytes, 0, headerEndIndex);
+        string[] lines = header.Split("\r\n", StringSplitOptions.None);
         string[] requestParts = lines[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (requestParts.Length < 2 || !string.Equals(requestParts[0], "GET", StringComparison.OrdinalIgnoreCase))
+        if (requestParts.Length < 2)
         {
-            return false;
+            throw new InvalidDataException("The HTTP request line is invalid.");
         }
-
-        requestedPath = NormalizePath(requestParts[1].Split('?', 2)[0]);
 
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (string line in lines.Skip(1))
@@ -318,7 +334,70 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
             headers[line[..separatorIndex].Trim()] = line[(separatorIndex + 1)..].Trim();
         }
 
-        if (!headers.TryGetValue("Sec-WebSocket-Key", out string? key) || string.IsNullOrWhiteSpace(key))
+        int contentLength = 0;
+        if (headers.TryGetValue("Content-Length", out string? contentLengthHeader)
+            && (!int.TryParse(contentLengthHeader, out contentLength) || contentLength < 0 || contentLength > 1024 * 1024))
+        {
+            throw new InvalidDataException("The HTTP request Content-Length is invalid or exceeds the 1 MB limit.");
+        }
+
+        int bodyStartIndex = headerEndIndex + 4;
+        int bufferedBodyLength = bufferedBytes.Length - bodyStartIndex;
+        byte[] bodyBytes = new byte[contentLength];
+        if (contentLength > 0 && bufferedBodyLength > 0)
+        {
+            Buffer.BlockCopy(bufferedBytes, bodyStartIndex, bodyBytes, 0, Math.Min(bufferedBodyLength, contentLength));
+        }
+
+        int totalBodyRead = Math.Min(bufferedBodyLength, contentLength);
+        while (totalBodyRead < contentLength)
+        {
+            int read = await stream.ReadAsync(bodyBytes.AsMemory(totalBodyRead, contentLength - totalBodyRead), cancellationToken).ConfigureAwait(false);
+            if (read == 0)
+            {
+                throw new InvalidDataException("The client disconnected before sending the full HTTP request body.");
+            }
+
+            totalBodyRead += read;
+        }
+
+        string path = NormalizePath(requestParts[1].Split('?', 2)[0]);
+        string body = contentLength == 0 ? string.Empty : Encoding.UTF8.GetString(bodyBytes);
+        return new RobotControlHttpRequest(requestParts[0], path, headers, body);
+    }
+
+    private static int IndexOfHeaderEnd(byte[] bytes)
+    {
+        for (int index = 0; index <= bytes.Length - 4; index++)
+        {
+            if (bytes[index] == '\r'
+                && bytes[index + 1] == '\n'
+                && bytes[index + 2] == '\r'
+                && bytes[index + 3] == '\n')
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private static bool TryCreateHandshakeResponse(
+        RobotControlHttpRequest request,
+        out string? requestedPath,
+        out byte[]? responseBytes)
+    {
+        requestedPath = null;
+        responseBytes = null;
+
+        if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        requestedPath = request.Path;
+
+        if (!request.Headers.TryGetValue("Sec-WebSocket-Key", out string? key) || string.IsNullOrWhiteSpace(key))
         {
             return false;
         }
@@ -335,7 +414,7 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
         return true;
     }
 
-    private static async Task WriteHttpResponseAsync(
+    private static async Task WriteEmptyHttpResponseAsync(
         NetworkStream stream,
         string status,
         CancellationToken cancellationToken)
@@ -343,6 +422,49 @@ internal sealed class RobotTelemetryWebSocketServer : IRobotTelemetryPublisher, 
         byte[] response = Encoding.ASCII.GetBytes(
             $"HTTP/1.1 {status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
         await stream.WriteAsync(response.AsMemory(), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task WriteControlHttpResponseAsync(
+        NetworkStream stream,
+        RobotControlHttpResponse controlResponse,
+        RobotControlHttpRequest request,
+        CancellationToken cancellationToken)
+    {
+        byte[] body = Encoding.UTF8.GetBytes(controlResponse.Body);
+        string status = controlResponse.StatusCode switch
+        {
+            200 => "200 OK",
+            204 => "204 No Content",
+            400 => "400 Bad Request",
+            404 => "404 Not Found",
+            405 => "405 Method Not Allowed",
+            409 => "409 Conflict",
+            500 => "500 Internal Server Error",
+            503 => "503 Service Unavailable",
+            _ => $"{controlResponse.StatusCode} Control Response"
+        };
+
+        request.Headers.TryGetValue("Origin", out string? origin);
+        string corsHeaders = RobotControlBridgeHttpHandler.IsAllowedDevOrigin(origin)
+            ? $"Access-Control-Allow-Origin: {origin}\r\n" +
+              "Access-Control-Allow-Methods: POST, OPTIONS\r\n" +
+              "Access-Control-Allow-Headers: Content-Type\r\n"
+            : string.Empty;
+
+        string header =
+            $"HTTP/1.1 {status}\r\n" +
+            "Connection: close\r\n" +
+            "Content-Type: application/json; charset=utf-8\r\n" +
+            $"Content-Length: {body.Length}\r\n" +
+            corsHeaders +
+            "\r\n";
+
+        byte[] headerBytes = Encoding.ASCII.GetBytes(header);
+        await stream.WriteAsync(headerBytes.AsMemory(), cancellationToken).ConfigureAwait(false);
+        if (body.Length > 0)
+        {
+            await stream.WriteAsync(body.AsMemory(), cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static string NormalizePath(string path)

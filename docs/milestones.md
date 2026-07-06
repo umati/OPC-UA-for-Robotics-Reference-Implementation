@@ -28,6 +28,7 @@
 - Visualization V4B: premium procedural fallback robot.
 - Visualization V5: presentation demo mode.
 - Visualization V6: live program/path preview.
+- Visualization V7: browser control panel and JSON program upload through local command bridge.
 
 ## Next
 
@@ -40,6 +41,7 @@
 
 - Map RemoteControl and RemotePrograms behavior to official Robotics TaskControl concepts.
 - Add official Robotics TaskControl mapping for program execution state and target metadata.
+- Add .NET OPC UA client / conformance client, tentatively `Robotics.ReferenceClient`.
 - Add negative conformance test target NodeSets.
 - Build conformance unit testing client/tool.
 - Expose asset management variables using the official information model.

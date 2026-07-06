@@ -18,7 +18,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -284,6 +286,24 @@ h2 {
   gap: 10px;
 }
 
+.server-control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(124, 243, 213, 0.2);
+  border-radius: 8px;
+  background: rgba(10, 20, 28, 0.72);
+}
+
+.control-note {
+  margin: 0;
+  color: #a9bbcc;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .model-panel {
   display: flex;
   flex-direction: column;
@@ -340,6 +360,117 @@ h2 {
   border-radius: 7px;
   background: #0f1722;
   color: #edf5ff;
+}
+
+.select-field,
+.file-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: #8ba6c1;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.select-field select,
+.file-field input,
+.program-json-preview {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(132, 156, 184, 0.24);
+  border-radius: 7px;
+  background: #0f1722;
+  color: #edf5ff;
+}
+
+.select-field select,
+.file-field input {
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+.program-json-preview {
+  min-height: 132px;
+  max-height: 280px;
+  padding: 10px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.control-command-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.control-command-grid .button,
+.control-sample-row .button,
+.control-upload .button {
+  min-height: 38px;
+  font-size: 12px;
+}
+
+.control-sample-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(128px, 0.78fr);
+  align-items: end;
+  gap: 8px;
+}
+
+.control-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.command-result {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.command-result div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(132, 156, 184, 0.16);
+  border-radius: 7px;
+  background: rgba(18, 27, 39, 0.78);
+}
+
+.command-result .wide {
+  grid-column: 1 / -1;
+}
+
+.command-result dt,
+.command-result dd {
+  margin: 0;
+}
+
+.command-result dt {
+  color: #8ba6c1;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.command-result dd {
+  overflow-wrap: anywhere;
+  color: #eef5fb;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.command-result [data-accepted="true"] {
+  color: #b7f7c6;
+}
+
+.command-result [data-accepted="false"] {
+  color: #ffb4b4;
 }
 
 .button-row {
@@ -422,6 +553,9 @@ h2 {
 
 .button:disabled,
 .url-field input:disabled,
+.select-field select:disabled,
+.file-field input:disabled,
+.program-json-preview:disabled,
 input[type="range"]:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -443,6 +577,7 @@ input[type="range"]:disabled {
 
 .is-presentation-active .connection-panel,
 .is-presentation-active .model-panel,
+.is-presentation-active .server-control-panel,
 .is-presentation-active .control-section,
 .is-presentation-active .telemetry-panel {
   opacity: 0.62;

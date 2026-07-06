@@ -13,6 +13,7 @@ import {
   type VisualizationOptions,
   type VisualizationMode,
 } from './types';
+import { createControlPanel } from './controlPanel';
 import { defaultTelemetryUrl } from './telemetryClient';
 
 interface UiOptions {
@@ -56,7 +57,7 @@ export function createRobotUi(options: UiOptions): UiController {
   header.innerHTML = `
     <div>
       <p class="eyebrow">OPC UA Robotics</p>
-      <h1>Visualization V6</h1>
+      <h1>Visualization V7</h1>
     </div>
     <span class="status-pill" data-mode-status>Manual Mode</span>
   `;
@@ -125,6 +126,8 @@ export function createRobotUi(options: UiOptions): UiController {
 
   presentationActions.append(startPresentationButton, stopPresentationButton);
   options.container.append(presentationActions);
+
+  options.container.append(createControlPanel());
 
   const modelSection = document.createElement('section');
   modelSection.className = 'model-panel';
@@ -293,8 +296,8 @@ export function createRobotUi(options: UiOptions): UiController {
   const note = document.createElement('section');
   note.className = 'note-panel';
   note.innerHTML = `
-    <p>V6 uses a segmented GLB model when available and falls back to the procedural robot.</p>
-    <p>Live physics comes from server telemetry; in Live Telemetry Mode the browser is only a renderer.</p>
+    <p>V7 adds local demo bridge controls for operator-style server commands and JSON program upload.</p>
+    <p>Live physics comes from server telemetry; OPC UA server state remains authoritative.</p>
   `;
   options.container.append(note);
 
@@ -307,6 +310,7 @@ export function createRobotUi(options: UiOptions): UiController {
       <li>Official OPC UA Robotics instance model</li>
       <li>Simulation-bound live values</li>
       <li>WebSocket visualization bridge</li>
+      <li>Local HTTP command bridge for the browser demo UI</li>
       <li>Program metadata preview when emitted by server telemetry</li>
       <li>Browser renders only, server remains source of truth</li>
     </ul>

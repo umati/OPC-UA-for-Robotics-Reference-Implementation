@@ -1,8 +1,8 @@
 # Visualization
 
-Visualization V6 is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer`, includes a polished one-click presentation demo mode, and shows program target metadata when the telemetry stream provides it.
+Visualization V7 is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer`, includes a polished one-click presentation demo mode, shows program target metadata when the telemetry stream provides it, and adds a local browser control panel for demo/operator commands.
 
-The browser does not connect to OPC UA directly and does not define robot physics. It renders the latest telemetry snapshot produced by the server simulation. Program/path previews are approximate visual aids based on server-provided metadata; they are not the actual simulated or controller trajectory.
+The browser does not connect to OPC UA directly and does not define robot physics. It renders the latest telemetry snapshot produced by the server simulation. V7 browser commands are sent to a lightweight local HTTP bridge on the reference server, and the server-side OPC UA model, simulation, and program executor remain the source of truth. Program/path previews are approximate visual aids based on server-provided metadata; they are not the actual simulated or controller trajectory.
 
 ## Run the Reference Server
 
@@ -16,9 +16,10 @@ The server starts the OPC UA endpoint and, when available, the telemetry WebSock
 
 ```text
 Telemetry WebSocket endpoint: ws://localhost:48080/telemetry
+Control bridge endpoint: http://localhost:48080/control
 ```
 
-If the telemetry socket cannot bind, the server prints a warning and keeps the OPC UA server running.
+If the shared local listener cannot bind, the server prints warnings for telemetry/control and keeps the OPC UA server running.
 
 ## Run the Visualization
 
@@ -52,7 +53,7 @@ The heartbeat indicator reports:
 - `Stale` when the WebSocket is connected but no telemetry message has arrived for more than 1 second.
 - `Disconnected` when the WebSocket is not connected.
 
-## V6 Controls
+## V7 Controls
 
 - `Reset Home`: returns the active robot model to the home pose in Manual Mode.
 - `Local Demo`: runs the browser-side demo animation retained from V1. Sliders remain visible but disabled because the local animation owns the pose.
@@ -76,6 +77,30 @@ Keyboard shortcuts:
 - `D`: toggles Presentation Demo Mode.
 - `C`: clears the path trail.
 - `R`: resets the camera.
+
+## Visualization V7: Browser Control Panel
+
+V7 adds a `Server Control` panel for running the reference server demo without UaExpert. The panel uses:
+
+- Control Base URL: defaults to `http://localhost:48080`.
+- `Start Demo Motion` and `Stop Motion`.
+- Sample program loading for `pick-and-place-demo` and `axis-range-demo`.
+- Program commands: `Start Program`, `Pause Program`, `Resume Program`, and `Stop Program`.
+- JSON program upload using a `.json` file picker, editable text preview, and `Load Uploaded Program`.
+- A command result area showing the last command, accepted `true`/`false`, response message, and timestamp.
+
+The browser sends HTTP `POST` requests to `/control/...` on the local bridge. The bridge reuses the same server command handling used by the temporary `RemoteControl` and `RemotePrograms` OPC UA methods where those operations exist. Telemetry still flows over `ws://localhost:48080/telemetry`; command responses only acknowledge whether the server accepted the request.
+
+This is a local demo/operator UI bridge, not a standards-pure browser OPC UA TCP client. A real OPC UA client remains a later milestone.
+
+Demo flow without UaExpert:
+
+1. Start `Robotics.ReferenceServer`.
+2. Start the visualization with Vite.
+3. Select `Connect` to view live telemetry.
+4. Use `Load Sample Program`, then `Start Program`.
+5. Watch program state, targets, and robot motion update through telemetry.
+6. Optionally choose a `.json` program file, review or edit the text preview, then select `Load Uploaded Program` and `Start Program`.
 
 ## Visualization V6: Program and Path Preview
 
@@ -241,15 +266,18 @@ The world frame marks the base scene reference. The tool frame is attached to th
 - Live telemetry WebSocket client for `ws://localhost:48080/telemetry`.
 - Scene overlay and side-panel status for mode, connection state, heartbeat, telemetry age, joint position, joint velocity, program state, current step, moving state, and timestamp.
 - Program Preview panel for optional server-provided program metadata, current/next target joint angles, and approximate visual target/path preview.
+- Server Control panel for local demo bridge commands and JSON program upload.
 - Presentation Demo Mode with one-click path/frame/grid setup, slow camera choreography, motion-source-aware overlay, and Standards Story panel.
 - Live TCP/tool path trail with clear and visibility controls.
 - World/base and tool coordinate frame helpers.
 - Side-panel model status and GLB reload control.
 - Keyboard shortcuts for presentation mode, path clearing, and camera reset.
 
-## V6 Limitations
+## V7 Limitations
 
-- The WebSocket bridge streams JSON snapshots only; command/control remains through existing server mechanisms.
+- The WebSocket bridge streams JSON snapshots only.
+- The V7 HTTP control bridge is local demo/operator infrastructure, not a standards-pure OPC UA browser client.
+- Command/control still executes on the reference server and should be replaced or complemented by a real OPC UA client in a later milestone.
 - The GLB asset is optional and may not be present in the repository yet.
 - GLB validation checks required node names, but it cannot prove pivots and local axes were authored correctly.
 - Broadcasts repeat the latest server simulation snapshot and do not increase simulation fidelity.
@@ -260,4 +288,4 @@ The world frame marks the base scene reference. The tool frame is attached to th
 
 ## Visualization Plan
 
-After V6, richer standards-aligned TaskControl visualization, richer queued program timeline overlays, and the final segmented GLB robot can be added for robot program review and debugging.
+After V7, richer standards-aligned TaskControl visualization, richer queued program timeline overlays, the final segmented GLB robot, and a standards-pure OPC UA client can be added for robot program review and debugging.

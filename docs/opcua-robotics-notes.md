@@ -106,4 +106,13 @@ The browser visualization does not define robot physics, motion validation, prog
 
 Visualization V6 can also show program metadata from the server telemetry stream when those optional fields are present. The current implementation can expose the loaded program name, execution state, step index/count, step type, and server-known joint targets for the active and next move steps. The browser uses those values only for approximate visual target markers, ghost tool pose, and future path preview.
 
-This telemetry preview is not the final OPC UA Robotics standards mapping. The temporary `RemotePrograms` behavior and visualization metadata still need to be mapped to official Robotics TaskControl concepts in a later standards-aligned milestone.
+Visualization V7 adds a local browser demo/operator UI that sends command requests to a lightweight HTTP bridge at `http://localhost:48080/control`. That bridge is server-side infrastructure for local demos. It reuses the same command handling as the temporary `RemoteControl` and `RemotePrograms` method callbacks where possible, while telemetry continues to stream from `ws://localhost:48080/telemetry`.
+
+The architecture is intentionally separated:
+
+- Browser demo/operator UI: renders telemetry and sends local demo commands.
+- Local command bridge: accepts browser HTTP requests and dispatches them to server-owned command handling.
+- OPC UA server and simulation: remain the authoritative state and motion source.
+- Future standards-pure OPC UA client: should call OPC UA services/methods directly instead of using the local browser bridge.
+
+This telemetry and command preview is not the final OPC UA Robotics standards mapping. The temporary `RemotePrograms` behavior, visualization metadata, and bridge commands still need to be mapped to official Robotics TaskControl concepts in a later standards-aligned milestone. A future `Robotics.ReferenceClient` should provide a .NET OPC UA client/conformance-client path for direct standards-oriented validation.
