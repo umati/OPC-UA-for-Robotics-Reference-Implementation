@@ -1,12 +1,24 @@
 # Milestones
 
-1. Minimal OPC UA server.
-2. Load required NodeSets.
-3. Instantiate a neutral simulated 6-axis robot using the Reference Implementation / SixAxisRobot identity.
-4. Expose asset management variables.
-5. Expose condition monitoring variables.
-6. Add live simulation updates using physically plausible joint-space motion, including joint limits, velocity limits, acceleration limits, and smooth deceleration.
-7. Add simple JSON robot programs.
-8. Add remote operation methods/state transitions.
-9. Build client dashboard.
-10. Build 3D visualization.
+## Complete
+
+- Minimal OPC UA server.
+- Simulated six-axis robot.
+- Live telemetry.
+- Simple RemoteControl methods.
+- JSON robot program contracts.
+- RemotePrograms method exposure.
+
+## Next
+
+- Load official OPC UA NodeSet files.
+- Load OPC UA DI NodeSet.
+- Load OPC UA Robotics NodeSet.
+- Map temporary demo nodes to official Robotics concepts.
+
+## Later
+
+- Expose asset management variables using the official information model.
+- Expose condition monitoring variables using the official information model.
+- Build client dashboard.
+- Build 3D visualization.
