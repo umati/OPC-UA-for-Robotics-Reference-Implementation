@@ -59,3 +59,13 @@ Runtime values will continue to come from the simulation. Server code should loc
 This hybrid approach keeps the reference implementation maintainable: official and custom model structure stays in NodeSet files, while runtime code focuses on binding live values, methods, and behavior.
 
 Instance NodeSet variants will allow the same simulated six-axis robot backend to be exposed through different OPC UA Robotics representations. The planned robot model variant strategy is documented in `docs/robotics-model-variants.md`.
+
+## First Instance NodeSet
+
+The first instance NodeSet is `src/Robotics.ReferenceServer/NodeSets/Instances/SixAxisRobot.MinimalRealistic.Instance.NodeSet2.xml`.
+
+It is intentionally minimal and is intended to validate the instance NodeSet loading and runtime binding chain before a richer robot model variant is added. It includes one `MotionDeviceSystemType`, one `MotionDeviceType`, six `AxisType` axes, required controller/task/safety structure, and the mandatory powertrain/motor structure identified from the local official Robotics NodeSet.
+
+This instance NodeSet does not claim full coverage of the entire OPC UA Robotics specification. It is a first conformance test target for the static structure and future simulation binding path.
+
+The OPC UA base `RequiredModel` value uses the base model version and publication date declared by the local DI NodeSet. The local Robotics NodeSet declares an older OPC UA base requirement, so this should be rechecked when the official type NodeSet set is normalized.

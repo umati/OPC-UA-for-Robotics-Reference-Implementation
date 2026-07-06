@@ -14,12 +14,11 @@
 - Generated Robotics model classes.
 - Generated Robotics model project.
 - Reference server prepared to consume generated model.
+- First MinimalRealistic instance NodeSet created.
 
 ## Next
 
 - Add robot model variant selection.
-- Create first SixAxisRobot instance NodeSet.
-- Add MinimalRealistic instance NodeSet.
 - Add RichReference instance NodeSet.
 - Load official OPC UA NodeSet files.
 - Load OPC UA DI NodeSet.
