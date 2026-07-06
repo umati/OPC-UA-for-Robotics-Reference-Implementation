@@ -20,6 +20,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
 
     private readonly RobotSimulationService _simulationService;
     private readonly RobotProgramExecutor _programExecutor;
+    private readonly RobotNodeBinder _robotNodeBinder = new();
     private readonly List<BaseVariableState> _telemetryVariables = [];
     private readonly Dictionary<RobotAxisName, AxisVariableSet> _axisVariables = [];
 
@@ -29,6 +30,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private PoseVariableSet? _poseVariables;
     private RemoteControlStatusVariableSet? _remoteControlStatusVariables;
     private RemoteProgramStatusVariableSet? _remoteProgramStatusVariables;
+    private RobotNodeHandles? _importedRobotNodeHandles;
     private Timer? _simulationTimer;
     private DateTimeOffset _lastSimulationUpdateUtc = DateTimeOffset.UtcNow;
 
@@ -49,7 +51,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
     {
         // The imported MinimalRealistic instance NodeSet is the first official Robotics model variant.
-        // Runtime simulation binding is intentionally left for a later milestone.
+        // Selected imported variables are bound to simulation values below; richer binding remains a later milestone.
         NodeStateCollection importedRoboticsNodes = NodeSetLoader.LoadRequiredNodeSets(SystemContext);
         AddImportedRoboticsNodes(importedRoboticsNodes, externalReferences);
 
@@ -81,6 +83,41 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         }
 
         AddReverseReferences(externalReferences);
+        BindImportedRoboticsNodes(importedRoboticsNodes);
+    }
+
+    private void BindImportedRoboticsNodes(NodeStateCollection importedRoboticsNodes)
+    {
+        Console.WriteLine("MinimalRealistic instance node binding started.");
+
+        RobotNodeHandles handles;
+        try
+        {
+            handles = _robotNodeBinder.Bind(importedRoboticsNodes, SystemContext);
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine(
+                $"Warning: MinimalRealistic binding failed and will be skipped. The server will keep running with the temporary demo nodes active. {exception.Message}");
+            _importedRobotNodeHandles = null;
+            return;
+        }
+
+        _importedRobotNodeHandles = handles;
+
+        Console.WriteLine(
+            $"MinimalRealistic instance node binding completed: {handles.BoundNodeCount} nodes successfully bound.");
+
+        foreach (string missingNode in handles.MissingExpectedNodes)
+        {
+            Console.WriteLine($"Warning: MinimalRealistic binding: {missingNode}");
+        }
+
+        if (handles.BoundNodeCount < 10)
+        {
+            Console.WriteLine(
+                "Warning: MinimalRealistic binding found too few nodes to be useful. The server will keep running with the temporary demo nodes active.");
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -817,6 +854,8 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             SetVariableValue(axisVariables.MotorLoadPercent, axisState.MotorLoadPercent, timestamp);
             SetVariableValue(axisVariables.TemperatureCelsius, axisState.TemperatureCelsius, timestamp);
         }
+
+        _robotNodeBinder.UpdateFromSnapshot(_importedRobotNodeHandles, snapshot, SystemContext);
     }
 
     private static void SetVariableValue<T>(BaseDataVariableState<T>? variable, T value, DateTime timestamp)

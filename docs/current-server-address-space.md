@@ -7,7 +7,7 @@ The OPC UA server address space now has two areas:
 
 The temporary demo model remains useful for exercising the reference server, robot simulation, telemetry, remote control, and remote program execution paths. It is kept during migration so existing clients and method behavior remain unchanged.
 
-The imported MinimalRealistic model is the first official OPC UA Robotics instance variant loaded through the NodeSet chain. The server also loads the required OPC UA DI and OPC UA Robotics type NodeSets. Runtime simulation values are not bound to the imported instance nodes yet; that binding is the next model milestone.
+The imported MinimalRealistic model is the first official OPC UA Robotics instance variant loaded through the NodeSet chain. The server also loads the required OPC UA DI and OPC UA Robotics type NodeSets. Selected MinimalRealistic nodes are now bound to the same simulation snapshot that drives the temporary demo model.
 
 ## Browse Tree
 
@@ -40,7 +40,7 @@ Objects
     └── SafetyStates
 ```
 
-The imported model includes one MotionDeviceSystem, one MotionDevice, six axes, controller/task structure, safety state structure, and powertrain/motor structure. These nodes are static imported NodeSet nodes until runtime binding is added.
+The imported model includes one MotionDeviceSystem, one MotionDevice, six axes, controller/task structure, safety state structure, and powertrain/motor structure. Bound runtime nodes currently include robot identity, axis position, axis velocity, and motor temperature where those variables exist in the MinimalRealistic NodeSet. Target position and motor load are not invented because the current MinimalRealistic NodeSet does not define matching runtime variables.
 
 ## Robot Identity
 
@@ -82,6 +82,6 @@ Available sample programs:
 
 ## Implementation Status
 
-The current implementation has a working minimal OPC UA server, a neutral simulated six-axis robot, live telemetry updates, simple `RemoteControl` methods, JSON robot program contracts, exposed `RemotePrograms` methods, and imported official DI/Robotics type NodeSets plus the MinimalRealistic instance NodeSet.
+The current implementation has a working minimal OPC UA server, a neutral simulated six-axis robot, live telemetry updates, simple `RemoteControl` methods, JSON robot program contracts, exposed `RemotePrograms` methods, imported official DI/Robotics type NodeSets, the MinimalRealistic instance NodeSet, and selected simulation bindings into that imported instance model.
 
-The next model milestone is to bind simulation values to selected loaded Robotics nodes. The temporary demo nodes should remain in place until the official instance NodeSet model is bound and verified.
+The temporary demo nodes remain active during migration and should stay in place until the official instance NodeSet model is richer, bound, and verified.

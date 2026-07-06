@@ -46,7 +46,7 @@ The current generated model target is OPC UA Robotics. OPC UA DI is included as 
 
 Generated files are linked into `src/Robotics.OpcUa.RoboticsModel.Generated/` so generated model code remains separate from hand-written server code. The generated project intentionally includes both DI and Robotics generated code for now.
 
-The generated Robotics model code is now isolated in its own project and the reference server references that project as preparation for official Robotics model instantiation. The server now exposes the temporary demo address space and also loads the official DI/Robotics type NodeSets plus the MinimalRealistic instance NodeSet. It does not bind simulation values to the imported instance nodes or instantiate official Robotics objects programmatically yet.
+The generated Robotics model code is now isolated in its own project and the reference server references that project as preparation for official Robotics model instantiation. The server now exposes the temporary demo address space, loads the official DI/Robotics type NodeSets plus the MinimalRealistic instance NodeSet, and binds selected imported instance variables to simulation values. It does not instantiate official Robotics objects programmatically yet.
 
 The current temporary demo nodes will later be mapped to the generated Robotics types so the server can instantiate the official Robotics model objects.
 
@@ -76,4 +76,12 @@ The server-side NodeSet loading chain has started.
 
 The reference server now explicitly loads the local OPC UA DI NodeSet, the local OPC UA Robotics NodeSet, and the first MinimalRealistic instance NodeSet. OPC UA IA and OPC UA Machinery NodeSets are intentionally not loaded yet.
 
-The imported instance model is static for now. Simulation binding to selected imported Robotics nodes comes next.
+The imported instance model now has selected runtime bindings. The first binding pass updates robot identity, axis position, axis velocity, and motor temperature where those variables exist in the MinimalRealistic NodeSet.
+
+## Runtime Binding
+
+Runtime binding has started for the MinimalRealistic instance model.
+
+Binding uses stable NodeIds from the instance NodeSet, with reliable BrowsePaths reserved for future cases where a stable NodeId is not available. `DisplayName` should not be used for binding because it is client-facing text, not an identity contract.
+
+The current MinimalRealistic NodeSet does not define target-position or motor-load runtime variables, so those simulation values are skipped until a richer instance NodeSet adds matching nodes.

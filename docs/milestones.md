@@ -18,12 +18,12 @@
 - NodeSet loading into server started.
 - Official DI and Robotics type NodeSets loaded.
 - MinimalRealistic instance NodeSet loaded.
+- Bind simulation to MinimalRealistic instance nodes.
 
 ## Next
 
 - Add robot model variant selection.
 - Add RichReference instance NodeSet.
-- Bind simulation to instance nodes.
 - Map temporary demo nodes to official Robotics concepts.
 - Instantiate official Robotics model objects.
 - Gradually retire temporary demo nodes after official model is working.
