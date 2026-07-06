@@ -1,6 +1,6 @@
 # Visualization
 
-Visualization V4B is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer`.
+Visualization V5 is a browser-based Three.js robot viewer that can render live joint telemetry from the running `Robotics.ReferenceServer` and includes a polished one-click presentation demo mode.
 
 The browser does not connect to OPC UA directly and does not define robot physics. It renders the latest telemetry snapshot produced by the server simulation.
 
@@ -52,11 +52,13 @@ The heartbeat indicator reports:
 - `Stale` when the WebSocket is connected but no telemetry message has arrived for more than 1 second.
 - `Disconnected` when the WebSocket is not connected.
 
-## V4B Controls
+## V5 Controls
 
 - `Reset Home`: returns the active robot model to the home pose in Manual Mode.
 - `Local Demo`: runs the browser-side demo animation retained from V1. Sliders remain visible but disabled because the local animation owns the pose.
 - `Stop Demo`: stops the local animation and returns to Manual Mode.
+- `Start Jaw-Drop Demo`: enters Presentation Demo Mode, clears the path trail, enables the path trail, world frame, tool frame, and grid, moves the camera to a strong presentation angle, starts slow camera choreography, and shows the presentation overlay.
+- `Stop Demo Presentation`: exits Presentation Demo Mode, stops camera choreography, and leaves orbit controls usable.
 - `Connect` / `Disconnect`: controls the live telemetry WebSocket connection.
 - `Reload Model`: attempts to load the segmented GLB robot again and rebuilds the active visual model.
 - `World frame`: toggles the base/world coordinate frame helper.
@@ -64,6 +66,49 @@ The heartbeat indicator reports:
 - `Grid`: toggles the engineering floor grid.
 - `Path trail`: toggles rendering of the recent TCP/tool path.
 - `Clear Path`: clears the accumulated path buffer.
+- `Reset Camera`: restores the strong presentation camera angle.
+
+Keyboard shortcuts:
+
+- `D`: toggles Presentation Demo Mode.
+- `C`: clears the path trail.
+- `R`: resets the camera.
+
+## Visualization V5: Presentation Demo Mode
+
+V5 adds a distinct Presentation Demo Mode for colleague demos. It is separate from Manual Mode, Local Demo Mode, and Live Telemetry Mode in the UI, but it does not replace the underlying motion source.
+
+When `Start Jaw-Drop Demo` is selected, the viewer:
+
+- Clears the existing TCP/tool path trail.
+- Enables the path trail, world frame, tool frame, and grid.
+- Moves the camera to a polished three-quarter presentation angle.
+- Starts a slow orbit around the robot while looking at the robot center/tool area.
+- Shows a presentation overlay titled `OPC UA Robotics Reference Implementation`.
+- Shows model status, motion source, program state, current step, and heartbeat/freshness.
+- Visually de-emphasizes dense debug controls in the side panel.
+
+If live telemetry is connected, Presentation Demo Mode keeps using live telemetry for robot motion. The browser remains renderer-only and does not start local browser-side motion.
+
+If live telemetry is not connected, Presentation Demo Mode starts or continues Local Demo motion and clearly reports `Local Demo` as the motion source. It does not claim that the pose is live server telemetry. If live telemetry disconnects during a presentation, the viewer falls back to Local Demo motion and the overlay heartbeat changes away from `Live`.
+
+The `Stop Demo Presentation` button stops camera choreography and hides the presentation overlay. If Presentation Demo Mode started Local Demo motion itself, stopping the presentation also stops that local motion and returns to Manual Mode. If Local Demo was already running before presentation mode started, it remains the motion source after presentation mode stops.
+
+The side panel includes a compact `Standards Story` disclosure for presentations:
+
+- Official OPC UA Robotics instance model.
+- Simulation-bound live values.
+- WebSocket visualization bridge.
+- Browser renders only, server remains source of truth.
+
+Suggested colleague demo flow:
+
+1. Start the reference server and visualization.
+2. Connect the WebSocket when live server-backed motion should be shown.
+3. Select `Start Jaw-Drop Demo`.
+4. Let the slow camera orbit run while discussing the Standards Story.
+5. Use `C` to clear the path trail before a fresh motion segment.
+6. Select `Stop Demo Presentation` or press `D` to return to the normal controls.
 
 ## Visualization V4A: Segmented GLB Model Support
 
@@ -159,11 +204,13 @@ The world frame marks the base scene reference. The tool frame is attached to th
 - Local Demo motion retained from V1.
 - Live telemetry WebSocket client for `ws://localhost:48080/telemetry`.
 - Scene overlay and side-panel status for mode, connection state, heartbeat, telemetry age, joint position, joint velocity, program state, current step, moving state, and timestamp.
+- Presentation Demo Mode with one-click path/frame/grid setup, slow camera choreography, motion-source-aware overlay, and Standards Story panel.
 - Live TCP/tool path trail with clear and visibility controls.
 - World/base and tool coordinate frame helpers.
 - Side-panel model status and GLB reload control.
+- Keyboard shortcuts for presentation mode, path clearing, and camera reset.
 
-## V4B Limitations
+## V5 Limitations
 
 - The WebSocket bridge streams JSON snapshots only; command/control remains through existing server mechanisms.
 - The GLB asset is optional and may not be present in the repository yet.
@@ -173,6 +220,6 @@ The world frame marks the base scene reference. The tool frame is attached to th
 - No target frame, ghost pose, or program timeline overlay visualization yet.
 - No physics simulation in the browser.
 
-## V4 Plan
+## Visualization Plan
 
-After V4B, target frames, ghost pose comparison, richer program overlays, and the final segmented GLB robot can be added for robot program review and debugging.
+After V5, target frames, ghost pose comparison, richer program overlays, and the final segmented GLB robot can be added for robot program review and debugging.

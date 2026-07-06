@@ -70,6 +70,7 @@ const modeLabels: Record<VisualizationMode, string> = {
   manual: 'Manual Mode',
   localDemo: 'Local Demo Mode',
   liveTelemetry: 'Live Telemetry Mode',
+  presentationDemo: 'Presentation Demo Mode',
 };
 
 const heartbeatLabels: Record<TelemetryHeartbeat, string> = {

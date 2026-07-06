@@ -26,6 +26,7 @@
 - Visualization V3: path trail, coordinate frames, polished live overlay.
 - Visualization V4A: segmented GLB loading with primitive fallback.
 - Visualization V4B: premium procedural fallback robot.
+- Visualization V5: presentation demo mode.
 
 ## Next
 

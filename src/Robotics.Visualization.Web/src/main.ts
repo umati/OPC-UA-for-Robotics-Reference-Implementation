@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import './style.css';
+import { CameraChoreography } from './cameraChoreography';
 import { createToolFrame, createWorldFrame } from './frameHelpers';
 import { PathTrail } from './pathTrail';
+import { createPresentationOverlay, type PresentationMotionSource } from './presentationMode';
 import { createPrimitiveRobotModel, loadRobotVisualModel, resetHome } from './robotModel';
 import { createStatusOverlay } from './statusOverlay';
 import { getAxisPositions, getAxisVelocities, RobotTelemetryClient, type RobotTelemetryData } from './telemetryClient';
@@ -16,6 +18,7 @@ import {
   type RobotVisualModel,
   type TelemetryHeartbeat,
   type UiController,
+  type VisualizationMode,
   type VisualizationOptions,
 } from './types';
 
@@ -24,6 +27,7 @@ import {
 const sceneHost = requiredElement<HTMLDivElement>('scene');
 const controlsHost = requiredElement<HTMLElement>('controls');
 const statusOverlay = createStatusOverlay(sceneHost);
+const presentationOverlay = createPresentationOverlay(sceneHost);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x070b10);
@@ -46,6 +50,8 @@ orbitControls.maxPolarAngle = Math.PI * 0.48;
 orbitControls.minDistance = 2.2;
 orbitControls.maxDistance = 9;
 orbitControls.update();
+
+const cameraChoreography = new CameraChoreography(camera, orbitControls);
 
 const grid = new THREE.GridHelper(8.5, 34, 0x5fa6ff, 0x263341);
 const gridMaterial = grid.material as THREE.Material;
@@ -100,7 +106,25 @@ let demoStartMs = 0;
 let ui: UiController;
 let liveTelemetryActive = false;
 let lastTelemetryReceivedMs: number | null = null;
+let telemetryAgeMs: number | null = null;
 let heartbeat: TelemetryHeartbeat = 'disconnected';
+let visualizationMode: Exclude<VisualizationMode, 'presentationDemo'> = 'manual';
+let presentationActive = false;
+let presentationStartedLocalDemo = false;
+let robotModelStatus: RobotModelStatus = 'primitive';
+let latestTelemetryDetails: {
+  timestampUtc?: string;
+  currentProgramName?: string | null;
+  programExecutionState?: string;
+  currentStepIndex?: number | null;
+  isMoving?: boolean;
+} = {};
+let visualizationOptions: VisualizationOptions = {
+  showWorldFrame: true,
+  showToolFrame: true,
+  showGrid: true,
+  showPathTrail: true,
+};
 const toolWorldPosition = new THREE.Vector3();
 
 const telemetryClient = new RobotTelemetryClient({
@@ -112,7 +136,7 @@ const telemetryClient = new RobotTelemetryClient({
       liveTelemetryActive = true;
       stopDemo();
       setVisualizationMode('liveTelemetry');
-      ui.setManualControlState(false, 'liveTelemetry');
+      ui.setManualControlState(false, presentationActive ? 'presentationDemo' : 'liveTelemetry');
       return;
     }
 
@@ -120,6 +144,18 @@ const telemetryClient = new RobotTelemetryClient({
       liveTelemetryActive = false;
       lastTelemetryReceivedMs = null;
       updateTelemetryHealth(performance.now());
+
+      if (presentationActive) {
+        if (!demoRunning) {
+          demoRunning = true;
+          demoStartMs = performance.now();
+          presentationStartedLocalDemo = true;
+        }
+        ui.setManualControlState(false, 'presentationDemo');
+        setVisualizationMode('localDemo');
+        return;
+      }
+
       ui.setManualControlState(true, 'manual');
       setVisualizationMode(demoRunning ? 'localDemo' : 'manual');
     }
@@ -163,6 +199,7 @@ ui = createRobotUi({
       return;
     }
 
+    stopPresentation();
     demoRunning = true;
     demoStartMs = performance.now();
     setVisualizationMode('localDemo');
@@ -170,6 +207,12 @@ ui = createRobotUi({
   },
   onDemoStop(): void {
     stopDemo();
+  },
+  onPresentationStart(): void {
+    startPresentation();
+  },
+  onPresentationStop(): void {
+    stopPresentation();
   },
   onTelemetryConnect(url: string): void {
     stopDemo();
@@ -183,14 +226,14 @@ ui = createRobotUi({
   onClearPath(): void {
     pathTrail.clear();
   },
+  onResetCamera(): void {
+    cameraChoreography.resetCamera();
+  },
   onModelReload(): void {
     void reloadRobotModel();
   },
   onVisualizationOptionChange(options: VisualizationOptions): void {
-    worldFrame.visible = options.showWorldFrame;
-    toolFrame.visible = options.showToolFrame;
-    grid.visible = options.showGrid;
-    pathTrail.setVisible(options.showPathTrail);
+    applyVisualizationOptions(options);
   },
 });
 
@@ -201,6 +244,7 @@ statusOverlay.setTelemetryHealth('disconnected', null);
 void reloadRobotModel();
 
 window.addEventListener('resize', resizeRenderer);
+window.addEventListener('keydown', handleKeyboardShortcut);
 resizeRenderer();
 renderer.setAnimationLoop(render);
 
@@ -217,7 +261,13 @@ function render(nowMs: number): void {
   }
 
   updateTelemetryHealth(nowMs);
-  orbitControls.update();
+  if (presentationActive) {
+    cameraChoreography.update(nowMs);
+    updatePresentationOverlay();
+  } else {
+    orbitControls.update();
+  }
+
   renderer.render(scene, camera);
 }
 
@@ -228,7 +278,72 @@ function stopDemo(): void {
 
   demoRunning = false;
 
-  if (!liveTelemetryActive) {
+  if (!liveTelemetryActive && !presentationActive) {
+    setVisualizationMode('manual');
+    ui.setManualControlState(true, 'manual');
+  }
+}
+
+function startPresentation(): void {
+  if (presentationActive) {
+    return;
+  }
+
+  pathTrail.clear();
+  applyVisualizationOptions({
+    showWorldFrame: true,
+    showToolFrame: true,
+    showGrid: true,
+    showPathTrail: true,
+  });
+  ui.setVisualizationOptions(visualizationOptions);
+
+  presentationActive = true;
+  presentationStartedLocalDemo = false;
+
+  if (liveTelemetryActive) {
+    setVisualizationMode('liveTelemetry');
+  } else {
+    presentationStartedLocalDemo = !demoRunning;
+    if (!demoRunning) {
+      demoRunning = true;
+      demoStartMs = performance.now();
+    }
+    setVisualizationMode('localDemo');
+  }
+
+  ui.setManualControlState(false, 'presentationDemo');
+  ui.setPresentationActive(true);
+  presentationOverlay.setActive(true);
+  cameraChoreography.start(performance.now());
+  updatePresentationOverlay();
+}
+
+function stopPresentation(): void {
+  if (!presentationActive) {
+    return;
+  }
+
+  presentationActive = false;
+  cameraChoreography.stop();
+  presentationOverlay.setActive(false);
+  ui.setPresentationActive(false);
+
+  if (presentationStartedLocalDemo && !liveTelemetryActive) {
+    presentationStartedLocalDemo = false;
+    stopDemo();
+    return;
+  }
+
+  presentationStartedLocalDemo = false;
+
+  if (liveTelemetryActive) {
+    setVisualizationMode('liveTelemetry');
+    ui.setManualControlState(false, 'liveTelemetry');
+  } else if (demoRunning) {
+    setVisualizationMode('localDemo');
+    ui.setManualControlState(false, 'localDemo');
+  } else {
     setVisualizationMode('manual');
     ui.setManualControlState(true, 'manual');
   }
@@ -265,6 +380,7 @@ function applyLiveTelemetry(message: RobotTelemetryData): void {
     currentStepIndex: message.currentStepIndex,
     isMoving: message.isMoving,
   };
+  latestTelemetryDetails = telemetryDetails;
   ui.setTelemetryDetails(telemetryDetails);
   statusOverlay.setTelemetryDetails(telemetryDetails);
 }
@@ -278,6 +394,7 @@ let robotReloadToken = 0;
 
 async function reloadRobotModel(): Promise<void> {
   const reloadToken = ++robotReloadToken;
+  robotModelStatus = 'glbLoading';
   ui.setModelStatus('glbLoading', 'Loading GLB model...');
 
   const result = await loadRobotVisualModel();
@@ -301,6 +418,7 @@ function replaceRobotModel(result: RobotModelLoadResult): void {
   attachToolFrame(result.status);
   pathTrail.clear();
   addToolPathPoint();
+  robotModelStatus = result.status;
   ui.setModelStatus(result.status, result.message);
 }
 
@@ -322,6 +440,8 @@ function updateTelemetryHealth(nowMs: number): void {
     nextHeartbeat = ageMs <= 1000 ? 'live' : 'stale';
   }
 
+  telemetryAgeMs = ageMs;
+
   if (nextHeartbeat !== heartbeat || ageMs !== null) {
     heartbeat = nextHeartbeat;
     ui.setTelemetryHealth(nextHeartbeat, ageMs);
@@ -329,9 +449,53 @@ function updateTelemetryHealth(nowMs: number): void {
   }
 }
 
-function setVisualizationMode(mode: 'manual' | 'localDemo' | 'liveTelemetry'): void {
-  ui.setMode(mode);
-  statusOverlay.setMode(mode);
+function setVisualizationMode(mode: Exclude<VisualizationMode, 'presentationDemo'>): void {
+  visualizationMode = mode;
+  const displayedMode: VisualizationMode = presentationActive ? 'presentationDemo' : mode;
+  ui.setMode(displayedMode);
+  statusOverlay.setMode(displayedMode);
+}
+
+function applyVisualizationOptions(options: VisualizationOptions): void {
+  visualizationOptions = { ...options };
+  worldFrame.visible = visualizationOptions.showWorldFrame;
+  toolFrame.visible = visualizationOptions.showToolFrame;
+  grid.visible = visualizationOptions.showGrid;
+  pathTrail.setVisible(visualizationOptions.showPathTrail);
+}
+
+function updatePresentationOverlay(): void {
+  presentationOverlay.setSnapshot({
+    modelStatus: robotModelStatus,
+    motionSource: getPresentationMotionSource(),
+    programExecutionState: latestTelemetryDetails.programExecutionState,
+    currentStepIndex: latestTelemetryDetails.currentStepIndex,
+    heartbeat,
+    telemetryAgeMs,
+  });
+}
+
+function getPresentationMotionSource(): PresentationMotionSource {
+  return liveTelemetryActive && visualizationMode === 'liveTelemetry' ? 'liveTelemetry' : 'localDemo';
+}
+
+function handleKeyboardShortcut(event: KeyboardEvent): void {
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+    return;
+  }
+
+  if (event.key === 'd' || event.key === 'D') {
+    if (presentationActive) {
+      stopPresentation();
+    } else {
+      startPresentation();
+    }
+  } else if (event.key === 'c' || event.key === 'C') {
+    pathTrail.clear();
+  } else if (event.key === 'r' || event.key === 'R') {
+    cameraChoreography.resetCamera();
+  }
 }
 
 function demoAngles(seconds: number): JointAngles {

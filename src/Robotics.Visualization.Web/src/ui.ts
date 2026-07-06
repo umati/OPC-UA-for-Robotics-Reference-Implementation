@@ -21,9 +21,12 @@ interface UiOptions {
   onResetHome: () => void;
   onDemoStart: () => void;
   onDemoStop: () => void;
+  onPresentationStart: () => void;
+  onPresentationStop: () => void;
   onTelemetryConnect: (url: string) => void;
   onTelemetryDisconnect: () => void;
   onClearPath: () => void;
+  onResetCamera: () => void;
   onModelReload: () => void;
   onVisualizationOptionChange: (options: VisualizationOptions) => void;
 }
@@ -32,6 +35,7 @@ export function createRobotUi(options: UiOptions): UiController {
   const sliderInputs = new Map<JointName, HTMLInputElement>();
   const valueOutputs = new Map<JointName, HTMLOutputElement>();
   const velocityOutputs = new Map<JointName, HTMLElement>();
+  const optionInputs = new Map<keyof VisualizationOptions, HTMLInputElement>();
   const visualizationOptions: VisualizationOptions = {
     showWorldFrame: true,
     showToolFrame: true,
@@ -46,7 +50,7 @@ export function createRobotUi(options: UiOptions): UiController {
   header.innerHTML = `
     <div>
       <p class="eyebrow">OPC UA Robotics</p>
-      <h1>Visualization V4A</h1>
+      <h1>Visualization V5</h1>
     </div>
     <span class="status-pill" data-mode-status>Manual Mode</span>
   `;
@@ -103,6 +107,19 @@ export function createRobotUi(options: UiOptions): UiController {
   actions.append(resetButton, demoButton, stopButton);
   options.container.append(actions);
 
+  const presentationActions = document.createElement('div');
+  presentationActions.className = 'presentation-actions';
+
+  const startPresentationButton = button('Start Jaw-Drop Demo', 'primary');
+  const stopPresentationButton = button('Stop Demo Presentation', 'secondary');
+  stopPresentationButton.disabled = true;
+
+  startPresentationButton.addEventListener('click', options.onPresentationStart);
+  stopPresentationButton.addEventListener('click', options.onPresentationStop);
+
+  presentationActions.append(startPresentationButton, stopPresentationButton);
+  options.container.append(presentationActions);
+
   const modelSection = document.createElement('section');
   modelSection.className = 'model-panel';
   modelSection.setAttribute('aria-label', 'Robot model status');
@@ -123,17 +140,21 @@ export function createRobotUi(options: UiOptions): UiController {
 
   const toggles = document.createElement('div');
   toggles.className = 'toggle-grid';
-  toggles.append(
-    checkbox('World frame', visualizationOptions.showWorldFrame, (value) => updateOption('showWorldFrame', value)),
-    checkbox('Tool frame', visualizationOptions.showToolFrame, (value) => updateOption('showToolFrame', value)),
-    checkbox('Grid', visualizationOptions.showGrid, (value) => updateOption('showGrid', value)),
-    checkbox('Path trail', visualizationOptions.showPathTrail, (value) => updateOption('showPathTrail', value)),
-  );
+  addVisualizationToggle('showWorldFrame', 'World frame');
+  addVisualizationToggle('showToolFrame', 'Tool frame');
+  addVisualizationToggle('showGrid', 'Grid');
+  addVisualizationToggle('showPathTrail', 'Path trail');
 
   const clearPathButton = button('Clear Path', 'secondary');
+  const resetCameraButton = button('Reset Camera', 'secondary');
   clearPathButton.addEventListener('click', options.onClearPath);
+  resetCameraButton.addEventListener('click', options.onResetCamera);
 
-  viewSection.append(toggles, clearPathButton);
+  const viewActions = document.createElement('div');
+  viewActions.className = 'button-row';
+  viewActions.append(clearPathButton, resetCameraButton);
+
+  viewSection.append(toggles, viewActions);
   options.container.append(viewSection);
 
   const sliderSection = document.createElement('section');
@@ -244,10 +265,24 @@ export function createRobotUi(options: UiOptions): UiController {
   const note = document.createElement('section');
   note.className = 'note-panel';
   note.innerHTML = `
-    <p>V4A uses a segmented GLB model when available and falls back to the primitive robot.</p>
+    <p>V5 uses a segmented GLB model when available and falls back to the procedural robot.</p>
     <p>Live physics comes from server telemetry; in Live Telemetry Mode the browser is only a renderer.</p>
   `;
   options.container.append(note);
+
+  const standardsStory = document.createElement('details');
+  standardsStory.className = 'standards-story';
+  standardsStory.open = false;
+  standardsStory.innerHTML = `
+    <summary>Standards Story</summary>
+    <ul>
+      <li>Official OPC UA Robotics instance model</li>
+      <li>Simulation-bound live values</li>
+      <li>WebSocket visualization bridge</li>
+      <li>Browser renders only, server remains source of truth</li>
+    </ul>
+  `;
+  options.container.append(standardsStory);
 
   const modeStatus = options.container.querySelector<HTMLElement>('[data-mode-status]');
   const statusMode = options.container.querySelector<HTMLElement>('[data-status-mode]');
@@ -298,6 +333,7 @@ export function createRobotUi(options: UiOptions): UiController {
       modeStatus.textContent = modeLabels[mode];
       modeStatus.classList.toggle('is-running', mode === 'localDemo');
       modeStatus.classList.toggle('is-live', mode === 'liveTelemetry');
+      modeStatus.classList.toggle('is-presentation', mode === 'presentationDemo');
 
       if (statusMode) {
         statusMode.textContent = modeLabels[mode];
@@ -370,7 +406,27 @@ export function createRobotUi(options: UiOptions): UiController {
       modelStatus.title = message;
       reloadModelButton.disabled = status === 'glbLoading';
     },
+    setPresentationActive(isActive: boolean): void {
+      startPresentationButton.disabled = isActive;
+      stopPresentationButton.disabled = !isActive;
+      options.container.classList.toggle('is-presentation-active', isActive);
+    },
+    setVisualizationOptions(nextOptions: VisualizationOptions): void {
+      for (const key of Object.keys(nextOptions) as (keyof VisualizationOptions)[]) {
+        visualizationOptions[key] = nextOptions[key];
+        const input = optionInputs.get(key);
+        if (input) {
+          input.checked = nextOptions[key];
+        }
+      }
+    },
   };
+
+  function addVisualizationToggle(key: keyof VisualizationOptions, label: string): void {
+    const toggle = checkbox(label, visualizationOptions[key], (value) => updateOption(key, value));
+    optionInputs.set(key, toggle.input);
+    toggles.append(toggle.row);
+  }
 
   function updateOption(key: keyof VisualizationOptions, value: boolean): void {
     visualizationOptions[key] = value;
@@ -382,12 +438,14 @@ const modeLabels: Record<VisualizationMode, string> = {
   manual: 'Manual Mode',
   localDemo: 'Local Demo Mode',
   liveTelemetry: 'Live Telemetry Mode',
+  presentationDemo: 'Presentation Demo Mode',
 };
 
 const manualStatusLabels: Record<ManualControlReason, string> = {
   manual: 'Manual joint controls',
   localDemo: 'Sliders follow Local Demo animation',
   liveTelemetry: 'Sliders follow live telemetry',
+  presentationDemo: 'Presentation mode is controlling the demo view',
 };
 
 const heartbeatLabels: Record<TelemetryHeartbeat, string> = {
@@ -411,7 +469,11 @@ function button(label: string, variant: 'primary' | 'secondary'): HTMLButtonElem
   return element;
 }
 
-function checkbox(label: string, checked: boolean, onChange: (value: boolean) => void): HTMLLabelElement {
+function checkbox(
+  label: string,
+  checked: boolean,
+  onChange: (value: boolean) => void,
+): { row: HTMLLabelElement; input: HTMLInputElement } {
   const row = document.createElement('label');
   row.className = 'toggle-row';
 
@@ -424,7 +486,7 @@ function checkbox(label: string, checked: boolean, onChange: (value: boolean) =>
   text.textContent = label;
 
   row.append(input, text);
-  return row;
+  return { row, input };
 }
 
 function formatDegrees(value: number): string {

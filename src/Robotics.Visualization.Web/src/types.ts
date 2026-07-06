@@ -8,7 +8,7 @@ export type JointAngles = Record<JointName, number>;
 
 export type JointVelocities = Partial<Record<JointName, number>>;
 
-export type VisualizationMode = 'manual' | 'localDemo' | 'liveTelemetry';
+export type VisualizationMode = 'manual' | 'localDemo' | 'liveTelemetry' | 'presentationDemo';
 
 export type TelemetryConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -19,7 +19,7 @@ export interface VisualizationOptions {
   showPathTrail: boolean;
 }
 
-export type ManualControlReason = 'manual' | 'localDemo' | 'liveTelemetry';
+export type ManualControlReason = 'manual' | 'localDemo' | 'liveTelemetry' | 'presentationDemo';
 
 export type TelemetryHeartbeat = 'live' | 'stale' | 'disconnected';
 
@@ -84,4 +84,6 @@ export interface UiController {
     isMoving?: boolean;
   }) => void;
   setModelStatus: (status: RobotModelStatus, message: string) => void;
+  setPresentationActive: (isActive: boolean) => void;
+  setVisualizationOptions: (options: VisualizationOptions) => void;
 }
