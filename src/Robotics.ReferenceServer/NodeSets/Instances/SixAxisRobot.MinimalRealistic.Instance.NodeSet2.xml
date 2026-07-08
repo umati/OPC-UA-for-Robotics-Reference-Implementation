@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UANodeSet LastModified="2026-07-06T00:00:00Z"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd"
-           xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+<UANodeSet LastModified="2026-07-06T00:00:00Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd" xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
   <NamespaceUris>
     <Uri>urn:RoboticsReferenceImplementation:Instances</Uri>
     <Uri>http://opcfoundation.org/UA/DI/</Uri>
@@ -10,32 +7,57 @@
   </NamespaceUris>
   <Models>
     <Model ModelUri="urn:RoboticsReferenceImplementation:Instances" Version="0.1.0" PublicationDate="2026-07-06T00:00:00Z">
-      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05.04" PublicationDate="2025-01-08T00:00:00Z"/>
-      <RequiredModel ModelUri="http://opcfoundation.org/UA/DI/" Version="1.05.0" PublicationDate="2025-11-15T00:00:00Z"/>
-      <RequiredModel ModelUri="http://opcfoundation.org/UA/Robotics/" Version="1.01" PublicationDate="2025-08-25T00:00:00Z"/>
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05.04" PublicationDate="2025-01-08T00:00:00Z" />
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/DI/" Version="1.05.0" PublicationDate="2025-11-15T00:00:00Z" />
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/Robotics/" Version="1.01" PublicationDate="2025-08-25T00:00:00Z" />
     </Model>
   </Models>
   <Aliases>
     <Alias Alias="Boolean">i=1</Alias>
+    <Alias Alias="Int16">i=4</Alias>
     <Alias Alias="Int32">i=6</Alias>
+    <Alias Alias="UInt32">i=7</Alias>
+    <Alias Alias="Int64">i=8</Alias>
     <Alias Alias="Double">i=11</Alias>
     <Alias Alias="String">i=12</Alias>
+    <Alias Alias="NodeId">i=17</Alias>
+    <Alias Alias="ExpandedNodeId">i=18</Alias>
     <Alias Alias="LocalizedText">i=21</Alias>
+    <Alias Alias="Argument">i=296</Alias>
     <Alias Alias="EUInformation">i=887</Alias>
+    <Alias Alias="EnumValueType">i=7594</Alias>
     <Alias Alias="HasTypeDefinition">i=40</Alias>
     <Alias Alias="HasProperty">i=46</Alias>
     <Alias Alias="HasComponent">i=47</Alias>
+    <Alias Alias="HasAddIn">i=17604</Alias>
+    <Alias Alias="HasSubStateMachine">i=117</Alias>
+    <Alias Alias="FromState">i=51</Alias>
+    <Alias Alias="ToState">i=52</Alias>
+    <Alias Alias="HasCause">i=53</Alias>
+    <Alias Alias="HasEffect">i=54</Alias>
     <Alias Alias="Organizes">i=35</Alias>
     <Alias Alias="BaseDataVariableType">i=63</Alias>
     <Alias Alias="BaseObjectType">i=58</Alias>
     <Alias Alias="FolderType">i=61</Alias>
     <Alias Alias="PropertyType">i=68</Alias>
+    <Alias Alias="MultiStateValueDiscreteType">i=11238</Alias>
     <Alias Alias="AnalogUnitType">i=17497</Alias>
+    <Alias Alias="StateType">i=2307</Alias>
+    <Alias Alias="TransitionType">i=2310</Alias>
+    <Alias Alias="CurrentStateVariableType">i=2760</Alias>
+    <Alias Alias="TransitionVariableType">i=2767</Alias>
     <Alias Alias="MotionDeviceSystemType">ns=3;i=1002</Alias>
     <Alias Alias="ControllerType">ns=3;i=1003</Alias>
     <Alias Alias="MotionDeviceType">ns=3;i=1004</Alias>
+    <Alias Alias="ExecutingSubstateMachineType">ns=3;i=1007</Alias>
+    <Alias Alias="TaskControlOperationType">ns=3;i=1008</Alias>
+    <Alias Alias="IdleSubstateMachineType">ns=3;i=1009</Alias>
     <Alias Alias="TaskControlType">ns=3;i=1011</Alias>
+    <Alias Alias="ReadySubstateMachineType">ns=3;i=1012</Alias>
     <Alias Alias="SafetyStateType">ns=3;i=1013</Alias>
+    <Alias Alias="SystemOperationStateMachineType">ns=3;i=1021</Alias>
+    <Alias Alias="TaskControlStateMachineType">ns=3;i=1025</Alias>
+    <Alias Alias="SystemOperationType">ns=3;i=1028</Alias>
     <Alias Alias="MotorType">ns=3;i=1019</Alias>
     <Alias Alias="AxisType">ns=3;i=16601</Alias>
     <Alias Alias="PowerTrainType">ns=3;i=16794</Alias>
@@ -80,6 +102,7 @@
       <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/CurrentUser</Reference>
       <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/Software</Reference>
       <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls</Reference>
+      <Reference ReferenceType="HasAddIn">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation</Reference>
     </References>
   </UAObject>
   <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/Manufacturer" BrowseName="2:Manufacturer" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController" DataType="LocalizedText">
@@ -125,46 +148,502 @@
     </References>
   </UAObject>
 
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation" BrowseName="3:SystemOperation" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController">
+    <DisplayName>SystemOperation</DisplayName>
+    <References>
+      <Reference ReferenceType="HasAddIn" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController</Reference>
+      <Reference ReferenceType="HasTypeDefinition">SystemOperationType</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference>
+    </References>
+  </UAObject>
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine" BrowseName="3:SystemOperationStateMachine" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation">
+    <DisplayName>SystemOperationStateMachine</DisplayName>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation</Reference>
+      <Reference ReferenceType="HasTypeDefinition">SystemOperationStateMachineType</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/CurrentState</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransition</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/PossibleStopModes</Reference>
+      
+      
+      
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine</Reference>
+      
+      
+      
+      
+      
+      
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Start</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/GetReady</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/StandDown</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/CurrentState" BrowseName="CurrentState" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine" DataType="LocalizedText">
+    <DisplayName>CurrentState</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">CurrentStateVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/CurrentState/Id</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>Idle</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/CurrentState/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/CurrentState" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/CurrentState</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:NodeId><uax:Identifier>ns=3;i=5030</uax:Identifier></uax:NodeId></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransition" BrowseName="LastTransition" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine" DataType="LocalizedText">
+    <DisplayName>LastTransition</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">TransitionVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransition/Id</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransition/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransition" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransition</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason" BrowseName="3:LastTransitionReason" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine" DataType="Int16">
+    <DisplayName>LastTransitionReason</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">MultiStateValueDiscreteType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason/EnumValues</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason/ValueAsText</Reference></References>
+    <Value><uax:Int16>0</uax:Int16></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason/EnumValues" BrowseName="EnumValues" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason" DataType="EnumValueType" ValueRank="1">
+    <DisplayName>EnumValues</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>0</uax:Value><uax:DisplayName><uax:Text>Unknown</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>1</uax:Value><uax:DisplayName><uax:Text>External</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>2</uax:Value><uax:DisplayName><uax:Text>Direct</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>3</uax:Value><uax:DisplayName><uax:Text>System</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>4</uax:Value><uax:DisplayName><uax:Text>Error</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>5</uax:Value><uax:DisplayName><uax:Text>Application</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason/ValueAsText" BrowseName="ValueAsText" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason" DataType="LocalizedText">
+    <DisplayName>ValueAsText</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>Invalid</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/PossibleStopModes" BrowseName="3:PossibleStopModes" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine" DataType="EnumValueType" ValueRank="1" ArrayDimensions="0">
+    <DisplayName>PossibleStopModes</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">BaseDataVariableType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>1</uax:Value><uax:DisplayName><uax:Text>OnPath</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>2</uax:Value><uax:DisplayName><uax:Text>EndOfCycle</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>3</uax:Value><uax:DisplayName><uax:Text>ProcessStop</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>4</uax:Value><uax:DisplayName><uax:Text>QuickStop</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>5</uax:Value><uax:DisplayName><uax:Text>EndOfInstruction</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Start" BrowseName="3:Start" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine">
+    <DisplayName>Start</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Start/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Start/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Start" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Start</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop" BrowseName="3:Stop" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine">
+    <DisplayName>Stop</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop/InputArguments</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop/InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>InputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>StopMode</uax:Name><uax:DataType><uax:Identifier>i=8</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/Stop</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/GetReady" BrowseName="3:GetReady" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine">
+    <DisplayName>GetReady</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/GetReady/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/GetReady/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/GetReady" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/GetReady</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/StandDown" BrowseName="3:StandDown" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine">
+    <DisplayName>StandDown</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/StandDown/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/StandDown/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/StandDown" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/StandDown</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine" BrowseName="3:IdleSubstateMachine" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine">
+    <DisplayName>IdleSubstateMachine</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">IdleSubstateMachineType</Reference><Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/CurrentState</Reference><Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransition</Reference><Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason</Reference></References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/CurrentState" BrowseName="CurrentState" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine" DataType="LocalizedText">
+    <DisplayName>CurrentState</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">CurrentStateVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/CurrentState/Id</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/CurrentState/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/CurrentState" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/CurrentState</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransition" BrowseName="LastTransition" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine" DataType="LocalizedText">
+    <DisplayName>LastTransition</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">TransitionVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransition/Id</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransition/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransition" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransition</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason" BrowseName="3:LastTransitionReason" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine" DataType="Int16">
+    <DisplayName>LastTransitionReason</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">MultiStateValueDiscreteType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason/EnumValues</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason/ValueAsText</Reference></References>
+    <Value><uax:Int16>0</uax:Int16></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason/EnumValues" BrowseName="EnumValues" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason" DataType="EnumValueType" ValueRank="1">
+    <DisplayName>EnumValues</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>0</uax:Value><uax:DisplayName /><uax:Description /></uax:EnumValueType></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason/ValueAsText" BrowseName="ValueAsText" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason" DataType="LocalizedText">
+    <DisplayName>ValueAsText</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/IdleSubstateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>Invalid</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine" BrowseName="3:ExecutingSubstateMachine" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine">
+    <DisplayName>ExecutingSubstateMachine</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">ExecutingSubstateMachineType</Reference><Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/CurrentState</Reference><Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransition</Reference><Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason</Reference></References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/CurrentState" BrowseName="CurrentState" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine" DataType="LocalizedText">
+    <DisplayName>CurrentState</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">CurrentStateVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/CurrentState/Id</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/CurrentState/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/CurrentState" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/CurrentState</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransition" BrowseName="LastTransition" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine" DataType="LocalizedText">
+    <DisplayName>LastTransition</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">TransitionVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransition/Id</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransition/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransition" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransition</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason" BrowseName="3:LastTransitionReason" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine" DataType="Int16">
+    <DisplayName>LastTransitionReason</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">MultiStateValueDiscreteType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason/EnumValues</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason/ValueAsText</Reference></References>
+    <Value><uax:Int16>0</uax:Int16></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason/EnumValues" BrowseName="EnumValues" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason" DataType="EnumValueType" ValueRank="1">
+    <DisplayName>EnumValues</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>0</uax:Value><uax:DisplayName><uax:Text>Unknown</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>1</uax:Value><uax:DisplayName><uax:Text>External</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>2</uax:Value><uax:DisplayName><uax:Text>Direct</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>3</uax:Value><uax:DisplayName><uax:Text>System</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>4</uax:Value><uax:DisplayName><uax:Text>Error</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>5</uax:Value><uax:DisplayName><uax:Text>Application</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason/ValueAsText" BrowseName="ValueAsText" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason" DataType="LocalizedText">
+    <DisplayName>ValueAsText</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine/ExecutingSubstateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>Invalid</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+
   <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls" BrowseName="3:TaskControls" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController">
     <DisplayName>TaskControls</DisplayName>
     <References>
       <Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController</Reference>
       <Reference ReferenceType="HasTypeDefinition">FolderType</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl</Reference>
     </References>
   </UAObject>
-  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl" BrowseName="1:MainTaskControl" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls">
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl" BrowseName="1:MainTaskControl" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls">
     <DisplayName>MainTaskControl</DisplayName>
     <References>
       <Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls</Reference>
       <Reference ReferenceType="HasTypeDefinition">TaskControlType</Reference>
-      <Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ComponentName</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ParameterSet</Reference>
+      <Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ComponentName</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ParameterSet</Reference>
+      <Reference ReferenceType="HasAddIn">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation</Reference>
     </References>
   </UAObject>
-  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ComponentName" BrowseName="2:ComponentName" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl" DataType="LocalizedText">
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ComponentName" BrowseName="2:ComponentName" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl" DataType="LocalizedText">
     <DisplayName>ComponentName</DisplayName>
-    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
     <Value><uax:LocalizedText><uax:Text>Main task control</uax:Text></uax:LocalizedText></Value>
   </UAVariable>
-  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ParameterSet" BrowseName="2:ParameterSet" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl">
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ParameterSet" BrowseName="2:ParameterSet" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl">
     <DisplayName>ParameterSet</DisplayName>
     <References>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl</Reference>
       <Reference ReferenceType="HasTypeDefinition">BaseObjectType</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/TaskProgramLoaded</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/TaskProgramName</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskProgramLoaded</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskProgramName</Reference>
     </References>
   </UAObject>
-  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/TaskProgramLoaded" BrowseName="3:TaskProgramLoaded" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ParameterSet" DataType="Boolean">
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskProgramLoaded" BrowseName="3:TaskProgramLoaded" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ParameterSet" DataType="Boolean">
     <DisplayName>TaskProgramLoaded</DisplayName>
-    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ParameterSet</Reference><Reference ReferenceType="HasTypeDefinition">BaseDataVariableType</Reference></References>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ParameterSet</Reference><Reference ReferenceType="HasTypeDefinition">BaseDataVariableType</Reference></References>
     <Value><uax:Boolean>false</uax:Boolean></Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/TaskProgramName" BrowseName="3:TaskProgramName" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ParameterSet" DataType="String">
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskProgramName" BrowseName="3:TaskProgramName" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ParameterSet" DataType="String">
     <DisplayName>TaskProgramName</DisplayName>
-    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/TaskControl/MainTaskControl/ParameterSet</Reference><Reference ReferenceType="HasTypeDefinition">BaseDataVariableType</Reference></References>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/ParameterSet</Reference><Reference ReferenceType="HasTypeDefinition">BaseDataVariableType</Reference></References>
     <Value><uax:String></uax:String></Value>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation" BrowseName="3:TaskControlOperation" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl">
+    <DisplayName>TaskControlOperation</DisplayName>
+    <References>
+      <Reference ReferenceType="HasAddIn" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl</Reference>
+      <Reference ReferenceType="HasTypeDefinition">TaskControlOperationType</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference>
+    </References>
+  </UAObject>
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine" BrowseName="3:TaskControlStateMachine" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation">
+    <DisplayName>TaskControlStateMachine</DisplayName>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation</Reference>
+      <Reference ReferenceType="HasTypeDefinition">TaskControlStateMachineType</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/CurrentState</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransition</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason</Reference>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Start</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadProgram</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/CurrentState" BrowseName="CurrentState" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine" DataType="LocalizedText">
+    <DisplayName>CurrentState</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">CurrentStateVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/CurrentState/Id</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>Idle</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/CurrentState/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/CurrentState" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/CurrentState</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:NodeId><uax:Identifier>ns=3;i=5040</uax:Identifier></uax:NodeId></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransition" BrowseName="LastTransition" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine" DataType="LocalizedText">
+    <DisplayName>LastTransition</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">TransitionVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransition/Id</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransition/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransition" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransition</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason" BrowseName="3:LastTransitionReason" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine" DataType="Int16">
+    <DisplayName>LastTransitionReason</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasTypeDefinition">MultiStateValueDiscreteType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason/EnumValues</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason/ValueAsText</Reference></References>
+    <Value><uax:Int16>0</uax:Int16></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason/EnumValues" BrowseName="EnumValues" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason" DataType="EnumValueType" ValueRank="1">
+    <DisplayName>EnumValues</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>0</uax:Value><uax:DisplayName><uax:Text>Unknown</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>1</uax:Value><uax:DisplayName><uax:Text>External</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>2</uax:Value><uax:DisplayName><uax:Text>Direct</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>3</uax:Value><uax:DisplayName><uax:Text>System</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>4</uax:Value><uax:DisplayName><uax:Text>Error</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>5</uax:Value><uax:DisplayName><uax:Text>Application</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason/ValueAsText" BrowseName="ValueAsText" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason" DataType="LocalizedText">
+    <DisplayName>ValueAsText</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>Invalid</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Start" BrowseName="3:Start" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>Start</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Start/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Start/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Start" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Start</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop" BrowseName="3:Stop" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>Stop</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop/InputArguments</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop/InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>InputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>StopMode</uax:Name><uax:DataType><uax:Identifier>i=8</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/Stop</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName" BrowseName="3:LoadByName" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>LoadByName</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName/InputArguments</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName/InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>InputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Name</uax:Name><uax:DataType><uax:Identifier>i=12</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByName</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId" BrowseName="3:LoadByNodeId" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>LoadByNodeId</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId/InputArguments</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId/InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>InputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Id</uax:Name><uax:DataType><uax:Identifier>i=18</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/LoadByNodeId</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadProgram" BrowseName="3:UnloadProgram" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>UnloadProgram</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadProgram/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadProgram/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadProgram" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadProgram</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName" BrowseName="3:UnloadByName" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>UnloadByName</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName/InputArguments</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName/InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>InputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Name</uax:Name><uax:DataType><uax:Identifier>i=12</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByName</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId" BrowseName="3:UnloadByNodeId" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>UnloadByNodeId</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId/InputArguments</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId/InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>InputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Id</uax:Name><uax:DataType><uax:Identifier>i=18</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/UnloadByNodeId</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine" BrowseName="3:ReadySubstateMachine" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine">
+    <DisplayName>ReadySubstateMachine</DisplayName>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine</Reference>
+      <Reference ReferenceType="HasTypeDefinition">ReadySubstateMachineType</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/CurrentState</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransition</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason</Reference>
+      
+      
+      
+      
+      <Reference ReferenceType="HasComponent">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/ResetToProgramStart</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/CurrentState" BrowseName="CurrentState" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine" DataType="LocalizedText">
+    <DisplayName>CurrentState</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">CurrentStateVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/CurrentState/Id</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>AtProgramStart</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/CurrentState/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/CurrentState" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/CurrentState</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:NodeId><uax:Identifier>ns=3;i=5023</uax:Identifier></uax:NodeId></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransition" BrowseName="LastTransition" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine" DataType="LocalizedText">
+    <DisplayName>LastTransition</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">TransitionVariableType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransition/Id</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransition/Id" BrowseName="Id" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransition" DataType="NodeId">
+    <DisplayName>Id</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransition</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason" BrowseName="3:LastTransitionReason" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine" DataType="Int16">
+    <DisplayName>LastTransitionReason</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine</Reference><Reference ReferenceType="HasTypeDefinition">MultiStateValueDiscreteType</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason/EnumValues</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason/ValueAsText</Reference></References>
+    <Value><uax:Int16>0</uax:Int16></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason/EnumValues" BrowseName="EnumValues" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason" DataType="EnumValueType" ValueRank="1">
+    <DisplayName>EnumValues</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>0</uax:Value><uax:DisplayName><uax:Text>Unknown</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>1</uax:Value><uax:DisplayName><uax:Text>External</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>2</uax:Value><uax:DisplayName><uax:Text>Direct</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>3</uax:Value><uax:DisplayName><uax:Text>System</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>4</uax:Value><uax:DisplayName><uax:Text>Error</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=7616</uax:Identifier></uax:TypeId><uax:Body><uax:EnumValueType><uax:Value>5</uax:Value><uax:DisplayName><uax:Text>Application</uax:Text></uax:DisplayName></uax:EnumValueType></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason/ValueAsText" BrowseName="ValueAsText" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason" DataType="LocalizedText">
+    <DisplayName>ValueAsText</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/LastTransitionReason</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:LocalizedText><uax:Text>Invalid</uax:Text></uax:LocalizedText></Value>
+  </UAVariable>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  <UAMethod NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/ResetToProgramStart" BrowseName="3:ResetToProgramStart" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine">
+    <DisplayName>ResetToProgramStart</DisplayName>
+    <References><Reference ReferenceType="HasComponent" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine</Reference><Reference ReferenceType="HasProperty">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/ResetToProgramStart/OutputArguments</Reference></References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/ResetToProgramStart/OutputArguments" BrowseName="OutputArguments" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/ResetToProgramStart" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>OutputArguments</DisplayName>
+    <References><Reference ReferenceType="HasProperty" IsForward="false">ns=1;s=SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine/ReadySubstateMachine/ResetToProgramStart</Reference><Reference ReferenceType="HasTypeDefinition">PropertyType</Reference></References>
+    <Value><uax:ListOfExtensionObject><uax:ExtensionObject><uax:TypeId><uax:Identifier>i=297</uax:Identifier></uax:TypeId><uax:Body><uax:Argument><uax:Name>Status</uax:Name><uax:DataType><uax:Identifier>i=6</uax:Identifier></uax:DataType><uax:ValueRank>-1</uax:ValueRank><uax:ArrayDimensions /><uax:Description /></uax:Argument></uax:Body></uax:ExtensionObject></uax:ListOfExtensionObject></Value>
   </UAVariable>
 
   <UAObject NodeId="ns=1;s=SixAxisRobot.MinimalRealistic/System/SafetyStates" BrowseName="3:SafetyStates" ParentNodeId="ns=1;s=SixAxisRobot.MinimalRealistic/System">

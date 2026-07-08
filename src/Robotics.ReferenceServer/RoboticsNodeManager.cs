@@ -16,6 +16,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private readonly RobotSimulationService _simulationService;
     private readonly RobotProgramExecutor _programExecutor;
     private readonly RobotControlCommandService _controlCommands;
+    private readonly RoboticsOperationStateCoordinator _operationStateCoordinator;
     private readonly RobotNodeBinder _robotNodeBinder = new();
     private readonly RobotAddressSpaceMode _addressSpaceMode;
     private readonly IRobotTelemetryPublisher? _telemetryPublisher;
@@ -29,6 +30,8 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
     private RemoteControlStatusVariableSet? _remoteControlStatusVariables;
     private RemoteProgramStatusVariableSet? _remoteProgramStatusVariables;
     private RobotNodeHandles? _importedRobotNodeHandles;
+    private RoboticsTaskControlBinding? _officialTaskControlBinding;
+    private RoboticsSystemOperationBinding? _officialSystemOperationBinding;
     private Timer? _simulationTimer;
     private DateTimeOffset _lastSimulationUpdateUtc = DateTimeOffset.UtcNow;
 
@@ -50,6 +53,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         _telemetryPublisher = telemetryPublisher;
         _simulationService = new RobotSimulationService();
         _programExecutor = new RobotProgramExecutor(_simulationService);
+        _operationStateCoordinator = new RoboticsOperationStateCoordinator(_programExecutor);
         _controlCommands = new RobotControlCommandService(
             _simulationService,
             _programExecutor,
@@ -92,6 +96,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         RobotProgramExecutionSnapshot startupProgramSnapshot = _programExecutor.GetSnapshot();
         RefreshTelemetryVariables(startupRobotSnapshot);
         RefreshRemoteProgramStatus(startupProgramSnapshot);
+        _operationStateCoordinator.Initialize(startupProgramSnapshot, SystemContext);
         _telemetryPublisher?.Publish(startupRobotSnapshot, startupProgramSnapshot);
 
         StartSimulationUpdates();
@@ -135,6 +140,15 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         }
 
         _importedRobotNodeHandles = handles;
+        _officialTaskControlBinding = RoboticsTaskControlBinding.Bind(
+            importedRoboticsNodes,
+            SystemContext,
+            CreateOfficialTaskControlMethodHandlers());
+        _officialSystemOperationBinding = RoboticsSystemOperationBinding.Bind(
+            importedRoboticsNodes,
+            SystemContext,
+            CreateOfficialSystemOperationMethodHandlers());
+        _operationStateCoordinator.Bind(_officialTaskControlBinding, _officialSystemOperationBinding);
 
         Console.WriteLine(
             $"MinimalRealistic instance node binding completed: {handles.BoundNodeCount} nodes successfully bound.");
@@ -149,6 +163,9 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             Console.WriteLine(
                 $"Warning: MinimalRealistic binding found too few nodes to be useful. {GetBindingFallbackMessage()}");
         }
+
+        PrintOfficialTaskControlBindingStatus(_officialTaskControlBinding);
+        PrintOfficialSystemOperationBindingStatus(_officialSystemOperationBinding);
     }
 
     private string GetBindingFallbackMessage()
@@ -284,6 +301,32 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         CreateMethod(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.PauseProgram", "PauseProgram", OnPauseProgram);
         CreateMethod(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.ResumeProgram", "ResumeProgram", OnResumeProgram);
         CreateMethod(remotePrograms, "Robots.SixAxisRobot.RemotePrograms.StopProgram", "StopProgram", OnStopProgram);
+    }
+
+    private IReadOnlyDictionary<string, GenericMethodCalledEventHandler> CreateOfficialTaskControlMethodHandlers()
+    {
+        return new Dictionary<string, GenericMethodCalledEventHandler>(StringComparer.Ordinal)
+        {
+            ["LoadByName"] = OnOfficialLoadByName,
+            ["LoadByNodeId"] = OnOfficialLoadByNodeId,
+            ["Start"] = OnOfficialStart,
+            ["Stop"] = OnOfficialStop,
+            ["UnloadProgram"] = OnOfficialUnloadProgram,
+            ["UnloadByName"] = OnOfficialUnloadByName,
+            ["UnloadByNodeId"] = OnOfficialUnloadByNodeId,
+            ["ReadySubstateMachine/ResetToProgramStart"] = OnOfficialResetToProgramStart
+        };
+    }
+
+    private IReadOnlyDictionary<string, GenericMethodCalledEventHandler> CreateOfficialSystemOperationMethodHandlers()
+    {
+        return new Dictionary<string, GenericMethodCalledEventHandler>(StringComparer.Ordinal)
+        {
+            ["GetReady"] = OnOfficialSystemGetReady,
+            ["Start"] = OnOfficialSystemStart,
+            ["Stop"] = OnOfficialSystemStop,
+            ["StandDown"] = OnOfficialSystemStandDown
+        };
     }
 
     private void CreateAxis(NodeState axesFolder, RobotAxisName axisName)
@@ -534,6 +577,345 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         return ToServiceResult(_controlCommands.StopProgram());
     }
 
+    private ServiceResult OnOfficialLoadByName(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        LogOfficialLoadByNameCall(inputArguments);
+
+        if (RejectOfficialInputCountMismatch("LoadByName", 1, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        if (inputArguments[0] is not string programName)
+        {
+            return RejectOfficialTaskControlMethod(
+                "LoadByName",
+                inputArguments.Count,
+                "LoadByName requires one string Name input.",
+                RobotControlCommandFailureKind.InvalidArgument,
+                StatusCodes.BadInvalidArgument,
+                outputArguments);
+        }
+
+        if (!IsSupportedOfficialProgramName(programName))
+        {
+            return RejectOfficialTaskControlMethod(
+                "LoadByName",
+                inputArguments.Count,
+                "LoadByName supports Name values 'axis-range-demo' and 'pick-and-place-demo'.",
+                RobotControlCommandFailureKind.InvalidArgument,
+                StatusCodes.BadInvalidArgument,
+                outputArguments);
+        }
+
+        lock (Lock)
+        {
+            _operationStateCoordinator.MarkExternalProgramCommand();
+            RobotControlCommandResult result = _controlCommands.LoadProgramByName(programName);
+            if (result.Accepted)
+            {
+                Console.WriteLine("LoadByName: Task Ready, ReadySubstate AtProgramStart");
+            }
+
+            return ToOfficialMethodResult("LoadByName", inputArguments.Count, result, outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialLoadByNodeId(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("LoadByNodeId", 1, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        if (inputArguments[0] is not ExpandedNodeId programNodeId)
+        {
+            return RejectOfficialTaskControlMethod(
+                "LoadByNodeId",
+                inputArguments.Count,
+                "LoadByNodeId requires one ExpandedNodeId Id input.",
+                RobotControlCommandFailureKind.InvalidArgument,
+                StatusCodes.BadInvalidArgument,
+                outputArguments);
+        }
+
+        return ToOfficialMethodResult("LoadByNodeId", inputArguments.Count, _controlCommands.LoadProgramByNodeId(programNodeId), outputArguments);
+    }
+
+    private ServiceResult OnOfficialStart(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("Start", 0, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        lock (Lock)
+        {
+            _operationStateCoordinator.MarkExternalProgramCommand();
+            return ToOfficialMethodResult("Start", inputArguments.Count, _controlCommands.StartProgram(), outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialStop(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("Stop", 1, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        if (inputArguments[0] is not long stopMode)
+        {
+            return RejectOfficialTaskControlMethod(
+                "Stop",
+                inputArguments.Count,
+                "Stop requires one Int64 StopMode input.",
+                RobotControlCommandFailureKind.InvalidArgument,
+                StatusCodes.BadInvalidArgument,
+                outputArguments);
+        }
+
+        if (stopMode != 0)
+        {
+            return RejectOfficialTaskControlMethod(
+                "Stop",
+                inputArguments.Count,
+                "Only StopMode 0 is supported by this reference demo.",
+                RobotControlCommandFailureKind.NotSupported,
+                StatusCodes.BadNotSupported,
+                outputArguments);
+        }
+
+        lock (Lock)
+        {
+            _operationStateCoordinator.MarkExternalProgramCommand();
+            RobotControlCommandResult result = _controlCommands.StopProgram();
+            if (result.Accepted && _programExecutor.State == RobotProgramExecutionState.Stopped)
+            {
+                Console.WriteLine("Stop task: ReadySubstate Suspended");
+            }
+
+            return ToOfficialMethodResult("Stop", inputArguments.Count, result, outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialUnloadProgram(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("UnloadProgram", 0, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        lock (Lock)
+        {
+            _operationStateCoordinator.MarkExternalProgramCommand();
+            return ToOfficialMethodResult("UnloadProgram", inputArguments.Count, _controlCommands.UnloadProgram(), outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialUnloadByName(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("UnloadByName", 1, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        if (inputArguments[0] is not string programName)
+        {
+            return RejectOfficialTaskControlMethod(
+                "UnloadByName",
+                inputArguments.Count,
+                "UnloadByName requires one string Name input.",
+                RobotControlCommandFailureKind.InvalidArgument,
+                StatusCodes.BadInvalidArgument,
+                outputArguments);
+        }
+
+        lock (Lock)
+        {
+            _operationStateCoordinator.MarkExternalProgramCommand();
+            return ToOfficialMethodResult("UnloadByName", inputArguments.Count, _controlCommands.UnloadProgramByName(programName), outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialUnloadByNodeId(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("UnloadByNodeId", 1, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        if (inputArguments[0] is not ExpandedNodeId programNodeId)
+        {
+            return RejectOfficialTaskControlMethod(
+                "UnloadByNodeId",
+                inputArguments.Count,
+                "UnloadByNodeId requires one ExpandedNodeId Id input.",
+                RobotControlCommandFailureKind.InvalidArgument,
+                StatusCodes.BadInvalidArgument,
+                outputArguments);
+        }
+
+        return ToOfficialMethodResult("UnloadByNodeId", inputArguments.Count, _controlCommands.UnloadProgramByNodeId(programNodeId), outputArguments);
+    }
+
+    private ServiceResult OnOfficialResetToProgramStart(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("ResetToProgramStart", 0, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        lock (Lock)
+        {
+            _operationStateCoordinator.MarkExternalProgramCommand();
+            RobotControlCommandResult result = _controlCommands.ResetProgramToStart();
+            if (result.Accepted)
+            {
+                Console.WriteLine("ResetToProgramStart: ReadySubstate AtProgramStart");
+            }
+
+            return ToOfficialMethodResult("ResetToProgramStart", inputArguments.Count, result, outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialSystemGetReady(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("SystemOperation.GetReady", 0, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        lock (Lock)
+        {
+            return CompleteOfficialMethod(
+                "SystemOperation.GetReady",
+                inputArguments.Count,
+                _operationStateCoordinator.GetReady(SystemContext),
+                outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialSystemStart(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("SystemOperation.Start", 0, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        lock (Lock)
+        {
+            return ToOfficialMethodResult(
+                "SystemOperation.Start",
+                inputArguments.Count,
+                _operationStateCoordinator.Start(SystemContext, _controlCommands.StartProgram),
+                outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialSystemStop(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("SystemOperation.Stop", 1, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        if (inputArguments[0] is not long stopMode)
+        {
+            return RejectOfficialTaskControlMethod(
+                "SystemOperation.Stop",
+                inputArguments.Count,
+                "SystemOperation Stop requires one Int64 StopMode input.",
+                RobotControlCommandFailureKind.InvalidArgument,
+                StatusCodes.BadInvalidArgument,
+                outputArguments);
+        }
+
+        if (stopMode != 0)
+        {
+            return RejectOfficialTaskControlMethod(
+                "SystemOperation.Stop",
+                inputArguments.Count,
+                "Only StopMode 0 is supported by this reference demo.",
+                RobotControlCommandFailureKind.NotSupported,
+                StatusCodes.BadNotSupported,
+                outputArguments);
+        }
+
+        lock (Lock)
+        {
+            return ToOfficialMethodResult(
+                "SystemOperation.Stop",
+                inputArguments.Count,
+                _operationStateCoordinator.Stop(SystemContext, _controlCommands.StopProgram),
+                outputArguments);
+        }
+    }
+
+    private ServiceResult OnOfficialSystemStandDown(
+        ISystemContext context,
+        MethodState method,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (RejectOfficialInputCountMismatch("SystemOperation.StandDown", 0, inputArguments, outputArguments) is { } countMismatch)
+        {
+            return countMismatch;
+        }
+
+        lock (Lock)
+        {
+            return ToOfficialMethodResult(
+                "SystemOperation.StandDown",
+                inputArguments.Count,
+                _operationStateCoordinator.StandDown(SystemContext),
+                outputArguments);
+        }
+    }
+
     private void UpdateRemoteControlStatus(string commandName, bool accepted, string message)
     {
         DateTime timestamp = DateTime.UtcNow;
@@ -557,7 +939,9 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         SetVariableValue(_remoteProgramStatusVariables?.LastProgramCommandAccepted, accepted, timestamp);
         SetVariableValue(_remoteProgramStatusVariables?.LastProgramMessage, message, timestamp);
         SetVariableValue(_remoteProgramStatusVariables?.LastProgramCommandTimestampUtc, timestamp, timestamp);
-        RefreshRemoteProgramStatus(_programExecutor.GetSnapshot());
+        RobotProgramExecutionSnapshot snapshot = _programExecutor.GetSnapshot();
+        RefreshRemoteProgramStatus(snapshot);
+        RefreshOfficialTaskControlStatus(snapshot);
 
         _remoteProgramStatusVariables?.LastProgramCommandName.ClearChangeMasks(SystemContext, false);
         _remoteProgramStatusVariables?.LastProgramCommandAccepted.ClearChangeMasks(SystemContext, false);
@@ -582,6 +966,116 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
         _remoteProgramStatusVariables?.ProgramExecutionState.ClearChangeMasks(SystemContext, false);
         _remoteProgramStatusVariables?.CurrentStepIndex.ClearChangeMasks(SystemContext, false);
         _remoteProgramStatusVariables?.LastProgramMessage.ClearChangeMasks(SystemContext, false);
+    }
+
+    private void RefreshOfficialTaskControlStatus(RobotProgramExecutionSnapshot snapshot)
+    {
+        _operationStateCoordinator.RefreshFromProgramSnapshot(snapshot, SystemContext);
+    }
+
+    private static void PrintOfficialTaskControlBindingStatus(RoboticsTaskControlBinding binding)
+    {
+        if (binding.IsParameterBindingAvailable)
+        {
+            Console.WriteLine("Official Robotics TaskControl parameter binding: active");
+        }
+        else
+        {
+            Console.WriteLine("Official Robotics TaskControl parameter binding: unavailable");
+            Console.WriteLine("Missing parameter nodes: " + string.Join("; ", binding.MissingParameterNodes));
+        }
+
+        Console.WriteLine($"Bound official TaskControl parameter variables: {binding.BoundParameterVariableCount}");
+
+        if (binding.IsMethodBindingAvailable)
+        {
+            Console.WriteLine("Official Robotics TaskControlOperation method binding: active");
+            Console.WriteLine($"Bound official TaskControl methods: {binding.BoundMethodCount}");
+        }
+        else
+        {
+            string reason = binding.TaskControlOperationAddInFound
+                ? "method instance nodes missing"
+                : "TaskControlOperation AddIn missing";
+            if (binding.IsParameterBindingAvailable)
+            {
+                Console.WriteLine("Official Robotics TaskControl binding: partial");
+            }
+
+            Console.WriteLine($"Official Robotics TaskControlOperation method binding: unavailable, {reason}");
+
+            foreach (string missingNode in binding.MissingMethodNodes)
+            {
+                Console.WriteLine($"Warning: Official Robotics TaskControlOperation method binding: {missingNode}");
+            }
+        }
+
+        Console.WriteLine($"Bound official TaskControl state variables: {binding.BoundStateVariableCount}");
+        Console.WriteLine(
+            $"Official Robotics TaskControl ReadySubstateMachine binding: {GetBindingAvailability(binding.BoundReadySubstateVariableCount, 6)}");
+        Console.WriteLine(
+            $"TaskControl ReadySubstateMachine binding: {GetBindingAvailability(binding.BoundReadySubstateVariableCount, 6)}");
+        Console.WriteLine($"ReadySubstateMachine state variables bound: {binding.BoundReadySubstateVariableCount}/6");
+
+        foreach (string missingNode in binding.MissingStateVariableNodes)
+        {
+            Console.WriteLine($"Warning: Official Robotics TaskControl state binding: {missingNode}");
+        }
+    }
+
+    private static void PrintOfficialSystemOperationBindingStatus(RoboticsSystemOperationBinding binding)
+    {
+        if (binding.IsMethodBindingAvailable)
+        {
+            Console.WriteLine("Official Robotics SystemOperation binding: active");
+            Console.WriteLine($"Bound official SystemOperation state variables: {binding.BoundStateVariableCount}");
+            Console.WriteLine($"Bound official SystemOperation methods: {binding.BoundMethodCount}");
+        }
+        else if (binding.IsPartial)
+        {
+            Console.WriteLine("Official Robotics SystemOperation binding: partial");
+            Console.WriteLine($"Bound official SystemOperation state variables: {binding.BoundStateVariableCount}");
+            Console.WriteLine($"Bound official SystemOperation methods: {binding.BoundMethodCount}");
+        }
+        else if (binding.IsMonitoringAvailable)
+        {
+            Console.WriteLine("Official Robotics SystemOperation binding: partial");
+            Console.WriteLine($"Bound official SystemOperation state variables: {binding.BoundStateVariableCount}");
+        }
+        else
+        {
+            Console.WriteLine("Official Robotics SystemOperation binding: unavailable");
+        }
+
+        int boundSystemSubstateVariables = binding.BoundIdleSubstateVariableCount + binding.BoundExecutingSubstateVariableCount;
+        Console.WriteLine(
+            $"SystemOperation substate binding: {GetBindingAvailability(boundSystemSubstateVariables, 12)}");
+        Console.WriteLine(
+            $"Official Robotics SystemOperation IdleSubstateMachine binding: {GetBindingAvailability(binding.BoundIdleSubstateVariableCount, 6)}");
+        Console.WriteLine($"IdleSubstateMachine state variables bound: {binding.BoundIdleSubstateVariableCount}/6");
+        Console.WriteLine(
+            $"Official Robotics SystemOperation ExecutingSubstateMachine binding: {GetBindingAvailability(binding.BoundExecutingSubstateVariableCount, 6)}");
+        Console.WriteLine($"ExecutingSubstateMachine state variables bound: {binding.BoundExecutingSubstateVariableCount}/6");
+
+        foreach (string missingNode in binding.MissingStateNodes)
+        {
+            Console.WriteLine($"Warning: Official Robotics SystemOperation state binding: {missingNode}");
+        }
+
+        foreach (string missingNode in binding.MissingMethodNodes)
+        {
+            Console.WriteLine($"Warning: Official Robotics SystemOperation method binding: {missingNode}");
+        }
+    }
+
+    private static string GetBindingAvailability(int boundCount, int expectedCount)
+    {
+        if (boundCount == expectedCount)
+        {
+            return "active";
+        }
+
+        return boundCount == 0 ? "unavailable" : "partial";
     }
 
     private static Argument CreateDoubleArgument(string name)
@@ -618,8 +1112,121 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             RobotControlCommandFailureKind.InvalidArgument => StatusCodes.BadInvalidArgument,
             RobotControlCommandFailureKind.InvalidState => StatusCodes.BadInvalidState,
             RobotControlCommandFailureKind.NotFound => StatusCodes.BadNotFound,
+            RobotControlCommandFailureKind.NotSupported => StatusCodes.BadNotSupported,
             RobotControlCommandFailureKind.Unexpected => StatusCodes.BadUnexpectedError,
             _ => StatusCodes.BadUnexpectedError
+        };
+    }
+
+    private ServiceResult RejectOfficialTaskControlMethod(
+        string commandName,
+        int receivedInputCount,
+        string message,
+        RobotControlCommandFailureKind failureKind,
+        uint serviceStatusCode,
+        IList<object> outputArguments)
+    {
+        RobotControlCommandResult result = _controlCommands.RejectProgramCommand(commandName, message, failureKind);
+        return CompleteOfficialMethod(commandName, receivedInputCount, result, outputArguments, serviceStatusCode);
+    }
+
+    private ServiceResult? RejectOfficialInputCountMismatch(
+        string commandName,
+        int expectedInputCount,
+        IList<object> inputArguments,
+        IList<object> outputArguments)
+    {
+        if (inputArguments.Count == expectedInputCount)
+        {
+            return null;
+        }
+
+        string message = expectedInputCount == 0
+            ? $"{commandName} does not accept input arguments."
+            : $"{commandName} requires {expectedInputCount} input argument{(expectedInputCount == 1 ? string.Empty : "s")}.";
+        uint serviceStatusCode = inputArguments.Count < expectedInputCount
+            ? StatusCodes.BadArgumentsMissing
+            : StatusCodes.BadTooManyArguments;
+
+        return RejectOfficialTaskControlMethod(
+            commandName,
+            inputArguments.Count,
+            message,
+            RobotControlCommandFailureKind.InvalidArgument,
+            serviceStatusCode,
+            outputArguments);
+    }
+
+    private static bool IsSupportedOfficialProgramName(string programName)
+    {
+        return string.Equals(programName, "axis-range-demo", StringComparison.Ordinal)
+            || string.Equals(programName, "pick-and-place-demo", StringComparison.Ordinal);
+    }
+
+    private static void LogOfficialLoadByNameCall(IList<object> inputArguments)
+    {
+        Console.WriteLine("OFFICIAL METHOD CALL ENTERED: LoadByName");
+        Console.WriteLine($"LoadByName received input count: {inputArguments.Count}");
+
+        if (inputArguments.Count == 0)
+        {
+            Console.WriteLine("LoadByName received input value: <none>; runtime type: <none>");
+            return;
+        }
+
+        for (int index = 0; index < inputArguments.Count; index++)
+        {
+            object? value = inputArguments[index];
+            Console.WriteLine(
+                $"LoadByName received input[{index}] value: {FormatDiagnosticValue(value)}; runtime type: {value?.GetType().FullName ?? "<null>"}");
+        }
+    }
+
+    private static string FormatDiagnosticValue(object? value)
+    {
+        return value is null ? "<null>" : value.ToString() ?? string.Empty;
+    }
+
+    private static ServiceResult ToOfficialMethodResult(
+        string methodName,
+        int receivedInputCount,
+        RobotControlCommandResult result,
+        IList<object> outputArguments)
+    {
+        return CompleteOfficialMethod(methodName, receivedInputCount, result, outputArguments);
+    }
+
+    private static ServiceResult CompleteOfficialMethod(
+        string methodName,
+        int receivedInputCount,
+        RobotControlCommandResult result,
+        IList<object> outputArguments,
+        uint? serviceStatusCode = null)
+    {
+        int status = ToOfficialStatus(result);
+        outputArguments.Clear();
+        outputArguments.Add(status);
+        Console.WriteLine(
+            "Official Robotics method call diagnostics: "
+            + $"Method={methodName}, "
+            + $"ReceivedInputCount={receivedInputCount}, "
+            + $"ReturnedOutputCount={outputArguments.Count}, "
+            + $"Status={status}");
+        return serviceStatusCode.HasValue ? serviceStatusCode.Value : ToServiceResult(result);
+    }
+
+    private static int ToOfficialStatus(RobotControlCommandResult result)
+    {
+        if (result.Accepted)
+        {
+            return 0;
+        }
+
+        return result.FailureKind switch
+        {
+            RobotControlCommandFailureKind.InvalidState => 1,
+            RobotControlCommandFailureKind.NotSupported => -1,
+            _ => 2
         };
     }
 
@@ -656,6 +1263,7 @@ internal sealed class RoboticsNodeManager : CustomNodeManager2
             RobotProgramExecutionSnapshot programSnapshot = _programExecutor.GetSnapshot();
             RefreshTelemetryVariables(robotSnapshot);
             RefreshRemoteProgramStatus(programSnapshot);
+            RefreshOfficialTaskControlStatus(programSnapshot);
             _telemetryPublisher?.Publish(robotSnapshot, programSnapshot);
 
             foreach (BaseVariableState variable in _telemetryVariables)

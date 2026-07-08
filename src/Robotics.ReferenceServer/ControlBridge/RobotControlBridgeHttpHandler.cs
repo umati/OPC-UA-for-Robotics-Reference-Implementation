@@ -118,6 +118,7 @@ internal sealed class RobotControlBridgeHttpHandler
             RobotControlCommandFailureKind.InvalidArgument => 400,
             RobotControlCommandFailureKind.InvalidState => 409,
             RobotControlCommandFailureKind.NotFound => 404,
+            RobotControlCommandFailureKind.NotSupported => 501,
             RobotControlCommandFailureKind.Unexpected => 500,
             _ => 400
         };

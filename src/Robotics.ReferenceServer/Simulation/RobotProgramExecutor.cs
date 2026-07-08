@@ -64,7 +64,11 @@ public sealed class RobotProgramExecutor
             return false;
         }
 
-        _currentStepIndex = 0;
+        if (_currentStepIndex < 0 || _state == RobotProgramExecutionState.Completed)
+        {
+            _currentStepIndex = 0;
+        }
+
         _state = RobotProgramExecutionState.Running;
         _lastErrorMessage = null;
         ResetCurrentStep();
@@ -96,7 +100,7 @@ public sealed class RobotProgramExecutor
 
     public void Stop()
     {
-        if (_state == RobotProgramExecutionState.Idle)
+        if (_state is RobotProgramExecutionState.Idle or RobotProgramExecutionState.Loaded or RobotProgramExecutionState.Completed)
         {
             return;
         }
@@ -104,7 +108,48 @@ public sealed class RobotProgramExecutor
         _simulationService.StopMotion();
         _state = RobotProgramExecutionState.Stopped;
         _lastErrorMessage = null;
+        _currentStepInitialized = false;
+    }
+
+    public bool UnloadProgram()
+    {
+        if (_currentProgram is null)
+        {
+            return false;
+        }
+
+        _simulationService.StopMotion();
+        _currentProgram = null;
+        _currentStepIndex = -1;
+        _state = RobotProgramExecutionState.Idle;
+        _lastErrorMessage = null;
         ResetCurrentStep();
+        return true;
+    }
+
+    public bool UnloadProgramByName(string programName)
+    {
+        if (_currentProgram is null || !string.Equals(_currentProgram.ProgramName, programName, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return UnloadProgram();
+    }
+
+    public bool ResetToProgramStart()
+    {
+        if (_currentProgram is null || _state == RobotProgramExecutionState.Running)
+        {
+            return false;
+        }
+
+        _simulationService.StopMotion();
+        _currentStepIndex = 0;
+        _state = RobotProgramExecutionState.Loaded;
+        _lastErrorMessage = null;
+        ResetCurrentStep();
+        return true;
     }
 
     public void Update(TimeSpan elapsed)
@@ -223,6 +268,7 @@ public sealed class RobotProgramExecutor
     {
         _state = RobotProgramExecutionState.Completed;
         _lastErrorMessage = null;
+        _currentStepIndex = 0;
         ResetCurrentStep();
     }
 

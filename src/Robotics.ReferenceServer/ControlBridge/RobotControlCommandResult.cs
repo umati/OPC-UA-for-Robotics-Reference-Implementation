@@ -6,6 +6,7 @@ internal enum RobotControlCommandFailureKind
     InvalidArgument,
     InvalidState,
     NotFound,
+    NotSupported,
     Unexpected
 }
 

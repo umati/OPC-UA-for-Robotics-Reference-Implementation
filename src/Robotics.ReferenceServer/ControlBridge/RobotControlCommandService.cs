@@ -1,3 +1,4 @@
+using Opc.Ua;
 using Robotics.ReferenceServer.Simulation;
 using Robotics.Shared;
 using System.Text.Json;
@@ -141,12 +142,39 @@ internal sealed class RobotControlCommandService
 
     public RobotControlCommandResult LoadSampleProgram(string? sampleProgramName)
     {
+        return LoadSampleProgram("LoadSampleProgram", sampleProgramName, "SampleProgramName");
+    }
+
+    public RobotControlCommandResult LoadProgramByName(string? programName)
+    {
+        return LoadSampleProgram("LoadByName", programName, "Name");
+    }
+
+    public RobotControlCommandResult LoadProgramByNodeId(ExpandedNodeId? programNodeId)
+    {
+        return UpdateRemoteProgramCommandStatus(
+            "LoadByNodeId",
+            false,
+            "LoadByNodeId is not supported because the reference program store does not expose OPC UA FileType program nodes.",
+            RobotControlCommandFailureKind.NotSupported);
+    }
+
+    public RobotControlCommandResult RejectProgramCommand(
+        string commandName,
+        string message,
+        RobotControlCommandFailureKind failureKind)
+    {
+        return UpdateRemoteProgramCommandStatus(commandName, false, message, failureKind);
+    }
+
+    private RobotControlCommandResult LoadSampleProgram(string commandName, string? sampleProgramName, string argumentName)
+    {
         if (string.IsNullOrWhiteSpace(sampleProgramName))
         {
             return UpdateRemoteProgramCommandStatus(
-                "LoadSampleProgram",
+                commandName,
                 false,
-                "LoadSampleProgram requires a non-empty SampleProgramName string.",
+                $"{commandName} requires a non-empty {argumentName} string.",
                 RobotControlCommandFailureKind.InvalidArgument);
         }
 
@@ -154,32 +182,34 @@ internal sealed class RobotControlCommandService
         if (!SampleProgramFiles.TryGetValue(normalizedName, out string? fileName))
         {
             return UpdateRemoteProgramCommandStatus(
-                "LoadSampleProgram",
+                commandName,
                 false,
                 $"Sample program '{sampleProgramName}' is not supported.",
                 RobotControlCommandFailureKind.InvalidArgument);
         }
 
-        string? sampleProgramPath = FindSampleProgramPath(fileName);
-        if (sampleProgramPath is null)
+        SampleProgramPathResolution sampleProgramPath = FindSampleProgramPath(fileName);
+        if (sampleProgramPath.Path is null)
         {
+            Console.WriteLine(
+                $"Sample program file '{fileName}' was not found. Searched paths: {string.Join("; ", sampleProgramPath.SearchedPaths)}");
             return UpdateRemoteProgramCommandStatus(
-                "LoadSampleProgram",
+                commandName,
                 false,
-                $"Sample program file '{fileName}' was not found.",
+                $"Sample program file '{fileName}' was not found. Searched paths: {string.Join("; ", sampleProgramPath.SearchedPaths)}",
                 RobotControlCommandFailureKind.NotFound);
         }
 
         RobotProgram? program;
         try
         {
-            string programJson = File.ReadAllText(sampleProgramPath);
+            string programJson = File.ReadAllText(sampleProgramPath.Path);
             program = JsonSerializer.Deserialize<RobotProgram>(programJson, ProgramJsonOptions);
         }
         catch (IOException exception)
         {
             return UpdateRemoteProgramCommandStatus(
-                "LoadSampleProgram",
+                commandName,
                 false,
                 $"Sample program file could not be read: {exception.Message}",
                 RobotControlCommandFailureKind.Unexpected);
@@ -187,13 +217,21 @@ internal sealed class RobotControlCommandService
         catch (JsonException exception)
         {
             return UpdateRemoteProgramCommandStatus(
-                "LoadSampleProgram",
+                commandName,
                 false,
                 $"Sample program file is not valid JSON: {exception.Message}",
                 RobotControlCommandFailureKind.InvalidArgument);
         }
 
-        return LoadProgram("LoadSampleProgram", program, $"Sample program '{normalizedName}' accepted.");
+        RobotControlCommandResult result = LoadProgram(commandName, program, $"Sample program '{normalizedName}' accepted.");
+        if (result.Accepted)
+        {
+            Console.WriteLine($"Loaded program by name: {normalizedName}");
+            Console.WriteLine($"Program source: {sampleProgramPath.Path}");
+            Console.WriteLine($"Step count: {program?.Steps.Count ?? 0}");
+        }
+
+        return result;
     }
 
     public RobotControlCommandResult StartProgram()
@@ -250,6 +288,67 @@ internal sealed class RobotControlCommandService
         {
             _programExecutor.Stop();
             return UpdateRemoteProgramCommandStatus("StopProgram", true, "Program stop accepted.");
+        }
+    }
+
+    public RobotControlCommandResult UnloadProgram()
+    {
+        lock (_syncRoot)
+        {
+            bool accepted = _programExecutor.UnloadProgram();
+            return UpdateRemoteProgramCommandStatus(
+                "UnloadProgram",
+                accepted,
+                accepted ? "Program unload accepted." : "Program unload was rejected because no program is loaded.",
+                RobotControlCommandFailureKind.InvalidState);
+        }
+    }
+
+    public RobotControlCommandResult UnloadProgramByName(string? programName)
+    {
+        if (string.IsNullOrWhiteSpace(programName))
+        {
+            return UpdateRemoteProgramCommandStatus(
+                "UnloadByName",
+                false,
+                "UnloadByName requires a non-empty Name string.",
+                RobotControlCommandFailureKind.InvalidArgument);
+        }
+
+        lock (_syncRoot)
+        {
+            bool accepted = _programExecutor.UnloadProgramByName(programName.Trim());
+            return UpdateRemoteProgramCommandStatus(
+                "UnloadByName",
+                accepted,
+                accepted
+                    ? $"Program '{programName.Trim()}' unload accepted."
+                    : $"Program '{programName}' is not the currently loaded program.",
+                RobotControlCommandFailureKind.InvalidState);
+        }
+    }
+
+    public RobotControlCommandResult UnloadProgramByNodeId(ExpandedNodeId? programNodeId)
+    {
+        return UpdateRemoteProgramCommandStatus(
+            "UnloadByNodeId",
+            false,
+            "UnloadByNodeId is not supported because the reference program store does not expose OPC UA FileType program nodes.",
+            RobotControlCommandFailureKind.NotSupported);
+    }
+
+    public RobotControlCommandResult ResetProgramToStart()
+    {
+        lock (_syncRoot)
+        {
+            bool accepted = _programExecutor.ResetToProgramStart();
+            return UpdateRemoteProgramCommandStatus(
+                "ResetToProgramStart",
+                accepted,
+                accepted
+                    ? "Program reset to first step accepted."
+                    : "Program reset was rejected because no program is loaded or the program is running.",
+                RobotControlCommandFailureKind.InvalidState);
         }
     }
 
@@ -314,17 +413,30 @@ internal sealed class RobotControlCommandService
             : trimmedName;
     }
 
-    private static string? FindSampleProgramPath(string fileName)
+    private static SampleProgramPathResolution FindSampleProgramPath(string fileName)
     {
         string relativePath = Path.Combine("RobotPrograms", "SamplePrograms", fileName);
-        string[] candidatePaths =
-        [
-            Path.Combine(AppContext.BaseDirectory, relativePath),
-            Path.Combine(Directory.GetCurrentDirectory(), "src", "Robotics.ReferenceServer", relativePath),
-            Path.Combine(Directory.GetCurrentDirectory(), relativePath)
-        ];
+        string repositoryRelativePath = Path.Combine("src", "Robotics.ReferenceServer", relativePath);
+        var candidatePaths = new List<string>();
 
-        return candidatePaths.FirstOrDefault(File.Exists);
+        foreach (string startDirectory in GetExistingSearchStartDirectories())
+        {
+            foreach (string directory in EnumerateSelfAndParents(startDirectory))
+            {
+                AddCandidatePath(candidatePaths, Path.Combine(directory, repositoryRelativePath));
+            }
+        }
+
+        foreach (string startDirectory in GetExistingSearchStartDirectories())
+        {
+            foreach (string directory in EnumerateSelfAndParents(startDirectory))
+            {
+                AddCandidatePath(candidatePaths, Path.Combine(directory, relativePath));
+            }
+        }
+
+        string? foundPath = candidatePaths.FirstOrDefault(File.Exists);
+        return new SampleProgramPathResolution(foundPath, candidatePaths);
     }
 
     private string GetProgramCommandRejectionMessage(string fallbackMessage)
@@ -332,4 +444,41 @@ internal sealed class RobotControlCommandService
         string? lastErrorMessage = _programExecutor.LastErrorMessage;
         return string.IsNullOrWhiteSpace(lastErrorMessage) ? fallbackMessage : lastErrorMessage;
     }
+
+    private static IEnumerable<string> GetExistingSearchStartDirectories()
+    {
+        string currentDirectory = Directory.GetCurrentDirectory();
+        if (Directory.Exists(currentDirectory))
+        {
+            yield return currentDirectory;
+        }
+
+        string baseDirectory = AppContext.BaseDirectory;
+        if (Directory.Exists(baseDirectory)
+            && !string.Equals(Path.GetFullPath(baseDirectory), Path.GetFullPath(currentDirectory), StringComparison.OrdinalIgnoreCase))
+        {
+            yield return baseDirectory;
+        }
+    }
+
+    private static IEnumerable<string> EnumerateSelfAndParents(string startDirectory)
+    {
+        DirectoryInfo? directory = new DirectoryInfo(Path.GetFullPath(startDirectory));
+        while (directory is not null)
+        {
+            yield return directory.FullName;
+            directory = directory.Parent;
+        }
+    }
+
+    private static void AddCandidatePath(List<string> candidatePaths, string candidatePath)
+    {
+        string fullPath = Path.GetFullPath(candidatePath);
+        if (!candidatePaths.Contains(fullPath, StringComparer.OrdinalIgnoreCase))
+        {
+            candidatePaths.Add(fullPath);
+        }
+    }
+
+    private sealed record SampleProgramPathResolution(string? Path, IReadOnlyList<string> SearchedPaths);
 }

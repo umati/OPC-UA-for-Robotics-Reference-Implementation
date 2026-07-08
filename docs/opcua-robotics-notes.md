@@ -86,6 +86,112 @@ Binding uses stable NodeIds from the instance NodeSet, with reliable BrowsePaths
 
 The current MinimalRealistic NodeSet does not define target-position or motor-load runtime variables, so those simulation values are skipped until a richer instance NodeSet adds matching nodes.
 
+## Remote Operation, TaskControl, and SystemOperation
+
+The temporary `RemoteControl` and `RemotePrograms` objects are local demo controls. They are useful for exercising the simulation, command service, telemetry stream, browser control bridge, and JSON program executor, but they are not the official OPC UA Robotics remote-operation model.
+
+The local official Robotics NodeSet defines the relevant TaskControl concepts in `TaskControlType`, `TaskControlOperationType`, and `TaskControlStateMachineType`. The generated Robotics constants and classes identify official TaskControl operation methods including `Start`, `Stop`, `LoadByName`, `LoadByNodeId`, `UnloadProgram`, `UnloadByName`, and `UnloadByNodeId`. The generated constants also identify the reset-equivalent `ResetToProgramStart` method on `ReadySubstateMachineType`. The generated method signatures expose one integer `Status` output. In the inspected local NodeSet, `Stop` takes `StopMode` with data type `i=8`; `LoadByName` and `UnloadByName` take a `String Name`; `LoadByNodeId` and `UnloadByNodeId` take an `ExpandedNodeId Id`.
+
+Official Robotics method callbacks must return exactly the declared `OutputArguments` count and data types. For the inspected TaskControl, ReadySubstateMachine, and SystemOperation methods, the official output list is exactly one `Int32 Status` value. Diagnostic messages are logged to the console or exposed through demo status variables; they are not returned as a second official method output.
+
+The current MinimalRealistic instance NodeSet includes a `TaskControls` folder, a `MainTaskControl` object typed as `TaskControlType`, and the official `TaskProgramLoaded` and `TaskProgramName` variables under its `ParameterSet`. These are basic `TaskControlType` parameter variables, not remote-operation method nodes. The server updates those two variables from the existing `RobotProgramExecutor` snapshot using their stable instance NodeIds:
+
+- `SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskProgramLoaded`
+- `SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskProgramName`
+
+Remote operation is a separate optional add-in below `TaskControlType`: `TaskControlOperation` contains `TaskControlStateMachine`, and the official methods belong to that state machine. `TaskControlType` parameters and the AddIn have different roles:
+
+- `TaskProgramLoaded` and `TaskProgramName` are TaskControl parameter variables that report program metadata.
+- `TaskControlOperation` is the official remote-operation AddIn. It is referenced from the TaskControl by `HasAddIn`.
+- `TaskControlStateMachine` carries official command methods, current/last transition variables, and the `ReadySubstateMachine`. The state and transition definitions come from `TaskControlStateMachineType`.
+
+The MinimalRealistic instance NodeSet now includes the official `TaskControlOperation` AddIn under `MainTaskControl`, typed as `TaskControlOperationType`, with `TaskControlStateMachine` typed as `TaskControlStateMachineType`. Following OPC UA Part 16 section 4.5, the instance does not duplicate the type-level `StateType` and `TransitionType` objects. The state and transition objects are defined by the official Robotics `TaskControlStateMachineType` and `ReadySubstateMachineType`; the instance exposes instance-specific variables such as `CurrentState`, `CurrentState/Id`, `LastTransition`, `LastTransition/Id`, and `LastTransitionReason`.
+
+`AvailableStates` and `AvailableTransitions` were not added because the local official Robotics NodeSet loaded by this server does not expose those children on the relevant Robotics StateMachineTypes.
+
+The previous copied instance children `Idle`, `Ready`, `Executing`, `IdleToIdle`, `IdleToReady`, `ReadyToIdle`, `ReadyToExecuting`, `ExecutingToReady`, `ExecutingToIdle`, `AtProgramStart`, `Suspended`, `ProgramStartToSuspended`, and `SuspendedToProgramStart` were removed. They mirrored the type definition and made clients see duplicate physical state/transition nodes below each StateMachine instance.
+
+OPC UA Part 16 section 4.5.2 also defines the read semantics for SubStateMachines that are used only in a particular parent state: when the parent StateMachine is not in that owning state, a client reading the SubStateMachine `CurrentState` receives `Bad_StateNotActive`. The reference server applies the same inactive read status to the SubStateMachine `CurrentState/Id`, `LastTransition`, and `LastTransition/Id` variables. It keeps the last internal value for continuity, but exposes `BadStateNotActive` while the substate machine is inactive and returns to `Good` when the parent state re-enters the owning state.
+
+Robotics substate-machine active conditions:
+
+| Substate machine | Active only while parent state is |
+| --- | --- |
+| `SystemOperationStateMachine/IdleSubstateMachine` | `SystemOperationStateMachine = Idle` |
+| `SystemOperationStateMachine/ExecutingSubstateMachine` | `SystemOperationStateMachine = Executing` |
+| `TaskControlStateMachine/ReadySubstateMachine` | `TaskControlStateMachine = Ready` |
+
+The official TaskControlOperation method nodes are bound to the existing reference program command service instead of duplicating command logic. The same command service is used by:
+
+- Temporary OPC UA `RemotePrograms` methods.
+- The browser HTTP control bridge.
+- Official `TaskControlOperation/TaskControlStateMachine` methods.
+
+Current official TaskControlOperation mapping:
+
+| Official method | Reference implementation mapping |
+| --- | --- |
+| `LoadByName(Name)` | Loads the current sample JSON file from disk by normalized sample name. Supported names are `pick-and-place-demo` and `axis-range-demo`. |
+| `Start()` | Calls the existing `RobotProgramExecutor.Start()` path through the shared command service. |
+| `Stop(StopMode)` | Requires one `Int64 StopMode`. `StopMode = 0` calls the existing stop path. Other stop modes return unsupported until stop-mode-specific behavior exists. |
+| `UnloadProgram()` | Clears the currently loaded reference program and returns to no loaded program. |
+| `UnloadByName(Name)` | Clears the currently loaded reference program only when `Name` matches the loaded program name. |
+| `ResetToProgramStart()` | Resets a loaded, non-running reference program to step 0. |
+
+`LoadByNodeId(Id)` and `UnloadByNodeId(Id)` are intentionally unsupported. The current reference program store is JSON/sample-name based and does not expose vendor-native program modules or OPC UA `FileType` instances for task programs. These methods return `Bad_NotSupported` and a non-success official `Status` output instead of pretending that NodeId loading exists.
+
+`LoadByName` and the temporary `LoadSampleProgram` resolve sample files by walking upward from the current directory and `AppContext.BaseDirectory`. The resolver prefers `src/Robotics.ReferenceServer/RobotPrograms/SamplePrograms/` in the repository, then a colocated `RobotPrograms/SamplePrograms/` directory. The server reads and deserializes the JSON file on every load call and logs the normalized program name, full source path, and step count. Unloading and loading again therefore picks up edits to `axis-range-demo.json` or `pick-and-place-demo.json` without rebuilding the server.
+
+TaskControl state variables are mapped conservatively from `RobotProgramExecutionState`:
+
+| Executor state | Official TaskControl state |
+| --- | --- |
+| No loaded program | `Idle` |
+| Loaded, completed, or reset program | `Ready` plus `ReadySubstateMachine/AtProgramStart` |
+| Running program | `Executing` |
+| Paused or manually stopped program | `Ready` plus `ReadySubstateMachine/Suspended` |
+| Unloaded program | `Idle`; the ready substate is not active |
+
+`CurrentState/Id` and `LastTransition/Id` are set to official Robotics type-level NodeIds. For TaskControl these are `ns=3;i=5040` Idle, `ns=3;i=5041` Ready, `ns=3;i=5042` Executing, `ns=3;i=5043` IdleToIdle, `ns=3;i=5044` IdleToReady, `ns=3;i=5045` ReadyToIdle, `ns=3;i=5046` ReadyToExecuting, `ns=3;i=5047` ExecutingToReady, and `ns=3;i=5048` ExecutingToIdle. For the ready substate machine they are `ns=3;i=5023` AtProgramStart, `ns=3;i=5024` Suspended, `ns=3;i=5025` ProgramStartToSuspended, and `ns=3;i=5026` SuspendedToProgramStart.
+
+Robotics v1.02 uses `ReadySubstateMachineType` to tell a client whether the loaded program pointer is at the beginning or suspended somewhere in the program. The reference demo now makes this observable: `LoadByName`, natural completion, and `ResetToProgramStart` expose `AtProgramStart`; manual `Stop(0)` during execution exposes `Suspended`. `ResetToProgramStart` is the explicit operation that returns the executor pointer to step 0.
+
+The local official Robotics NodeSet also defines `SystemOperationType` and `SystemOperationStateMachineType`. `ControllerType` has an optional `SystemOperation` AddIn referenced by `HasAddIn`; that AddIn is typed as `SystemOperationType` and contains the mandatory `SystemOperationStateMachine` child typed as `SystemOperationStateMachineType`.
+
+`TaskControlOperation` and `SystemOperation` are separate remote-operation surfaces. `TaskControlOperation` is task/program-level and belongs under a `TaskControlType` instance. `SystemOperation` is controller/system-level and belongs directly under a `ControllerType` instance. In MinimalRealistic, `TaskControlOperation` stays under `MainTaskControl`, while `SystemOperation` is under `MainController`.
+
+The MinimalRealistic instance NodeSet now includes the official `SystemOperation` AddIn under `MainController`. It uses the stable NodeIds:
+
+- `SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation`
+- `SixAxisRobot.MinimalRealistic/Controller/MainController/SystemOperation/SystemOperationStateMachine`
+
+The instantiated SystemOperation state machine includes `IdleSubstateMachine`, `ExecutingSubstateMachine`, `PossibleStopModes`, and official methods `Start`, `Stop`, `GetReady`, and `StandDown`. It does not duplicate the `SystemOperationStateMachineType` state and transition objects. Runtime state IDs point to official type-level NodeIds: `ns=3;i=5030` Idle, `ns=3;i=5031` Ready, `ns=3;i=5032` Executing, `ns=3;i=5033` IdleToIdle, `ns=3;i=5034` IdleToReady, `ns=3;i=5035` ReadyToIdle, `ns=3;i=5036` ReadyToExecuting, `ns=3;i=5037` ExecutingToReady, and `ns=3;i=5038` ExecutingToIdle. Idle substate IDs point to `ns=3;i=5015` StandBy, `ns=3;i=5017` GettingReady, `ns=3;i=5018` GettingReadyToStandBy, and `ns=3;i=5019` StandByToGettingReady. Executing substate IDs point to `ns=3;i=5020` Running, `ns=3;i=5021` Stopping, and `ns=3;i=5022` RunningToStopping. The inspected local NodeSet defines `Status` output data type `i=6` for these methods and `StopMode` input data type `i=8` for `Stop`.
+
+Robotics v1.02 uses `IdleSubstateMachineType` when the `Idle -> Ready` transition takes significant time and `ExecutingSubstateMachineType` when stopping from `Executing -> Ready` takes significant time. These substates let a client see more information while the main state is still transitioning. The demo reflects that intent with short observable delays: `GetReady()` shows `StandBy -> GettingReady` before the main state becomes `Ready`, and `Stop(0)` from `Executing` shows `Running -> Stopping` before the main state becomes `Ready`.
+
+The server binds SystemOperation state monitoring and the official `GetReady`, `Start`, `Stop`, and `StandDown` methods with the exact local NodeSet signatures. The conservative demo mapping keeps `TaskControlOperation` as the task/program surface and uses `SystemOperation` as the controller/system surface:
+
+| SystemOperation method | Demo mapping |
+| --- | --- |
+| `GetReady()` | From `Idle`, shows `IdleSubstateMachine` `StandBy -> GettingReady`, waits about 1.2 s, then sets SystemOperation to `Ready`; from `Ready`, returns success without changing state; from `Executing`, returns `Status = 1`. |
+| `Start()` | From `Ready`, sets SystemOperation to `Executing`, sets `ExecutingSubstateMachine = Running`, and starts the loaded task program when one exists. From `Idle`, returns `Status = 1`; from `Executing`, returns success without changing state. |
+| `Stop(StopMode)` | With `StopMode = 0` from `Executing`, shows `Running -> Stopping`, stops the loaded program when one is running, waits about 1.2 s, then returns SystemOperation to `Ready`. From `Ready`, returns success without changing state; from `Idle`, returns `Status = 1`. Other stop modes are unsupported. |
+| `StandDown()` | From `Ready` or `Idle`, maps SystemOperation to `Idle` and sets `IdleSubstateMachine = StandBy`. From `Executing`, returns `Status = 1`; the demo requires `Stop(0)` first. |
+
+`LastTransitionReason` is mapped conservatively: `1 External` for UaExpert/client-triggered methods and `3 System` for internal timer-detected natural completion. `5 Application` is documented by the specification but not currently used by this reference path.
+
+The TaskControl NodeIds use the controller/task-controls hierarchy:
+
+- `SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl`
+- `SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation`
+- `SixAxisRobot.MinimalRealistic/Controller/MainController/TaskControls/MainTaskControl/TaskControlOperation/TaskControlStateMachine`
+
+Current unresolved standard-mapping gaps:
+
+- Define an official program repository or file model before mapping `LoadByNodeId` and `UnloadByNodeId` to real program loading/unloading.
+- Add stop-mode-specific executor behavior if the reference implementation needs to distinguish official `StopMode` values.
+- Decide how temporary pause/resume behavior maps to official state-machine concepts. The inspected Robotics TaskControl method set does not define methods named `Pause` or `Resume`.
+
 ## Motion Validation
 
 The reference server includes an offline motion validation report mode:
