@@ -1,6 +1,7 @@
 bin/
 obj/
 .vs/
+pki/reference-client/
 
 # UA-ModelCompiler temporary output and logs.
 generated/modelcompiler-input/
