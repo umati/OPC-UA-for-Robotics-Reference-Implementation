@@ -17,11 +17,23 @@ internal static class Program
         Console.WriteLine("OPC UA Robotics Reference Client");
         Console.WriteLine($"Endpoint: {endpointUrl}");
 
-        bool callMode = MethodCallCommand.TryParse(args, out MethodCallCommand? callCommand, out string? commandError);
-        if (commandError is not null)
+        bool demoMode = DemoCommand.TryParse(args, out DemoCommand? demoCommand, out string? demoError);
+        if (demoError is not null)
         {
-            Console.WriteLine(commandError);
+            Console.WriteLine(demoError);
             return 1;
+        }
+
+        bool callMode = false;
+        MethodCallCommand? callCommand = null;
+        if (!demoMode)
+        {
+            callMode = MethodCallCommand.TryParse(args, out callCommand, out string? commandError);
+            if (commandError is not null)
+            {
+                Console.WriteLine(commandError);
+                return 1;
+            }
         }
 
         try
@@ -44,6 +56,19 @@ internal static class Program
                 }
 
                 return new MethodCallService(session).Invoke(report, callCommand!);
+            }
+
+            if (demoMode)
+            {
+                Console.WriteLine($"Connected: {(report.Connected ? "yes" : "no")}");
+                if (!report.Connected || report.RoboticsNamespaceIndex is null)
+                {
+                    Console.WriteLine("Robotics namespace is missing.");
+                    return 1;
+                }
+
+                var methodCallService = new MethodCallService(session);
+                return await new DemoSequenceService(methodCallService).ExecuteAsync(report, demoCommand!);
             }
 
             new ConsoleDiscoveryReportPrinter().Print(report);

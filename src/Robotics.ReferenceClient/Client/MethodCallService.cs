@@ -12,11 +12,17 @@ internal sealed class MethodCallService(Session session)
         Console.WriteLine($"Mode: call");
         Console.WriteLine($"Target: {command.QualifiedTarget}");
 
+        MethodCallResult result = InvokeStep(report, command);
+        return result.Succeeded ? 0 : 1;
+    }
+
+    public MethodCallResult InvokeStep(DiscoveryReport report, MethodCallCommand command)
+    {
         IReadOnlyList<MethodReport> matches = FindMethods(report, command);
         if (matches.Count == 0)
         {
             Console.WriteLine($"Error: expected method or parent object is missing: {command.QualifiedTarget}");
-            return 1;
+            return MethodCallResult.Failed(command.QualifiedTarget, "Expected method or parent object is missing.");
         }
 
         if (matches.Count > 1)
@@ -27,7 +33,7 @@ internal sealed class MethodCallService(Session session)
                 Console.WriteLine($"- ObjectId={match.ParentNodeId ?? "missing"} | MethodId={match.NodeId ?? "missing"} | Evidence={match.Evidence}");
             }
 
-            return 1;
+            return MethodCallResult.Failed(command.QualifiedTarget, "Ambiguous discovered method target.");
         }
 
         MethodReport method = matches[0];
@@ -35,7 +41,7 @@ internal sealed class MethodCallService(Session session)
         {
             Console.WriteLine($"Error: expected method or parent object is missing: {command.QualifiedTarget}");
             Console.WriteLine($"Evidence: {method.Evidence}");
-            return 1;
+            return MethodCallResult.Failed(command.QualifiedTarget, "Expected method or parent object is missing.");
         }
 
         NodeId objectId;
@@ -48,7 +54,7 @@ internal sealed class MethodCallService(Session session)
         catch (FormatException ex)
         {
             Console.WriteLine($"Error: discovered ObjectId or MethodId is not a valid NodeId: {ex.Message}");
-            return 1;
+            return MethodCallResult.Failed(command.QualifiedTarget, "Discovered ObjectId or MethodId is not a valid NodeId.");
         }
 
         Console.WriteLine($"ObjectId: {objectId}");
@@ -57,7 +63,7 @@ internal sealed class MethodCallService(Session session)
         if (!TryCreateInputArguments(method, command.InputValues, out VariantCollection inputArguments, out string? error))
         {
             Console.WriteLine($"Error: {error}");
-            return 1;
+            return MethodCallResult.Failed(command.QualifiedTarget, error ?? "Input argument validation failed.");
         }
 
         Console.WriteLine("InputArguments:");
@@ -80,7 +86,7 @@ internal sealed class MethodCallService(Session session)
         {
             Console.WriteLine("Call StatusCode: BadUnexpectedError");
             Console.WriteLine("Result: failed");
-            return 1;
+            return MethodCallResult.Failed(command.QualifiedTarget, "BadUnexpectedError");
         }
 
         CallMethodResult result = results[0];
@@ -110,10 +116,46 @@ internal sealed class MethodCallService(Session session)
         if (StatusCode.IsNotGood(result.StatusCode))
         {
             Console.WriteLine("Result: failed");
-            return 1;
+            return MethodCallResult.Failed(command.QualifiedTarget, result.StatusCode.ToString());
         }
 
-        return 0;
+        return MethodCallResult.Success(command.QualifiedTarget, result.StatusCode.ToString());
+    }
+
+    public bool TryGetInputArgumentMetadata(
+        DiscoveryReport report,
+        MethodCallCommand command,
+        out IReadOnlyList<MethodArgumentReport> arguments,
+        out string? status,
+        out string? error)
+    {
+        arguments = [];
+        status = null;
+        error = null;
+
+        IReadOnlyList<MethodReport> matches = FindMethods(report, command);
+        if (matches.Count == 0)
+        {
+            error = $"expected method or parent object is missing: {command.QualifiedTarget}";
+            return false;
+        }
+
+        if (matches.Count > 1)
+        {
+            error = $"ambiguous target {command.QualifiedTarget}; {matches.Count} discovered methods match.";
+            return false;
+        }
+
+        MethodReport method = matches[0];
+        if (!method.Found || string.IsNullOrWhiteSpace(method.NodeId) || string.IsNullOrWhiteSpace(method.ParentNodeId))
+        {
+            error = $"expected method or parent object is missing: {command.QualifiedTarget}. Evidence: {method.Evidence}";
+            return false;
+        }
+
+        status = method.InputArguments.Status;
+        arguments = method.InputArguments.Arguments;
+        return true;
     }
 
     private static IReadOnlyList<MethodReport> FindMethods(DiscoveryReport report, MethodCallCommand command)
