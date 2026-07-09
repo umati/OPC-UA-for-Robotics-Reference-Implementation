@@ -107,7 +107,10 @@ internal sealed class ConsoleDiscoveryReportPrinter
         foreach (TaskControlReport taskControl in controller.TaskControls)
         {
             PrintNode("    - ", taskControl.Node, includeTypeDefinition: false);
-            Console.WriteLine($"      TaskControlOperation: {(taskControl.TaskControlOperation is null ? "not found" : "found")}");
+            string operationStatus = taskControl.TaskControlOperation is null
+                ? "not found"
+                : $"found | NodeId={taskControl.TaskControlOperation.NodeId}";
+            Console.WriteLine($"      TaskControlOperation: {operationStatus}");
             Console.WriteLine("      Methods:");
             PrintMethods("      ", taskControl.Methods);
         }
@@ -145,6 +148,37 @@ internal sealed class ConsoleDiscoveryReportPrinter
             string status = method.Found ? "found" : "not found";
             string nodeId = method.NodeId is null ? string.Empty : $" | NodeId={method.NodeId}";
             Console.WriteLine($"{indent}- {method.Name}: {status}{nodeId}");
+            if (!method.Found)
+            {
+                Console.WriteLine($"{indent}  Evidence: {method.Evidence}");
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(method.BrowseName))
+            {
+                Console.WriteLine($"{indent}  BrowseName={method.BrowseName} | DisplayName={method.DisplayName ?? string.Empty}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(method.ParentNodeId))
+            {
+                Console.WriteLine($"{indent}  ParentNodeId={method.ParentNodeId}");
+            }
+
+            PrintArguments($"{indent}  ", "InputArguments", method.InputArguments);
+            PrintArguments($"{indent}  ", "OutputArguments", method.OutputArguments);
+        }
+    }
+
+    private static void PrintArguments(string indent, string label, MethodArgumentsReport report)
+    {
+        string propertyNodeId = report.PropertyNodeId is null ? string.Empty : $" | NodeId={report.PropertyNodeId}";
+        string diagnostic = report.Diagnostic is null ? string.Empty : $" | {report.Diagnostic}";
+        Console.WriteLine($"{indent}{label}: {report.Status}{propertyNodeId}{diagnostic}");
+
+        foreach (MethodArgumentReport argument in report.Arguments)
+        {
+            Console.WriteLine(
+                $"{indent}- Name={argument.Name} | DataType={argument.DataType} | ValueRank={argument.ValueRank} | ArrayDimensions={argument.ArrayDimensions} | Description={argument.Description}");
         }
     }
 

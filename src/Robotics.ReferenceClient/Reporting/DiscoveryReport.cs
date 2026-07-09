@@ -41,8 +41,29 @@ internal sealed record OperationReport(
 internal sealed record MethodReport(
     string Name,
     bool Found,
+    string? BrowseName,
+    string? DisplayName,
     string? NodeId,
+    string? ParentNodeId,
+    MethodArgumentsReport InputArguments,
+    MethodArgumentsReport OutputArguments,
     string Evidence);
+
+internal sealed record MethodArgumentsReport(
+    string Status,
+    string? PropertyNodeId,
+    IReadOnlyList<MethodArgumentReport> Arguments,
+    string? Diagnostic)
+{
+    public static MethodArgumentsReport Missing { get; } = new("missing", null, [], null);
+}
+
+internal sealed record MethodArgumentReport(
+    string Name,
+    string DataType,
+    int ValueRank,
+    string ArrayDimensions,
+    string Description);
 
 internal sealed record NodeDiscoveryInfo(
     string BrowseName,

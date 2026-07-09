@@ -24,6 +24,7 @@ internal sealed class RoboticsDiscoveryService(Session session)
     ];
 
     private readonly RoboticsBrowseHelpers _browse = new(session);
+    private readonly MethodMetadataDiscoveryService _methodMetadata = new(session, new RoboticsBrowseHelpers(session));
 
     public DiscoveryReport Discover(string endpointUrl)
     {
@@ -252,7 +253,7 @@ internal sealed class RoboticsDiscoveryService(Session session)
         if (stateMachine is null)
         {
             return expectedMethodNames
-                .Select(name => new MethodReport(name, Found: false, NodeId: null, "state machine unresolved"))
+                .Select(name => _methodMetadata.CreateMissingMethodReport(name, "state machine unresolved"))
                 .ToArray();
         }
 
@@ -260,7 +261,7 @@ internal sealed class RoboticsDiscoveryService(Session session)
         if (stateMachineNodeId is null)
         {
             return expectedMethodNames
-                .Select(name => new MethodReport(name, Found: false, NodeId: null, "state machine NodeId unresolved"))
+                .Select(name => _methodMetadata.CreateMissingMethodReport(name, "state machine NodeId unresolved"))
                 .ToArray();
         }
 
@@ -272,10 +273,10 @@ internal sealed class RoboticsDiscoveryService(Session session)
         {
             if (directMethods.TryGetValue(expectedMethodName, out ReferenceDescription? method))
             {
-                methodReports.Add(new MethodReport(
+                methodReports.Add(_methodMetadata.Discover(
                     expectedMethodName,
-                    Found: true,
-                    _browse.ToNodeId(method.NodeId)?.ToString() ?? method.NodeId.ToString(),
+                    method,
+                    stateMachineNodeId,
                     "namespace-qualified method browse under operation state machine"));
                 continue;
             }
@@ -290,7 +291,7 @@ internal sealed class RoboticsDiscoveryService(Session session)
                 continue;
             }
 
-            methodReports.Add(new MethodReport(expectedMethodName, Found: false, NodeId: null, "not found by qualified method browse"));
+            methodReports.Add(_methodMetadata.CreateMissingMethodReport(expectedMethodName, "not found by qualified method browse"));
         }
 
         return methodReports;
@@ -316,19 +317,19 @@ internal sealed class RoboticsDiscoveryService(Session session)
         NodeId? readySubstateNodeId = readySubstate is null ? null : _browse.ToNodeId(readySubstate.NodeId);
         if (readySubstateNodeId is null)
         {
-            return new MethodReport(methodName, Found: false, NodeId: null, "ReadySubstateMachine fallback unresolved");
+            return _methodMetadata.CreateMissingMethodReport(methodName, "ReadySubstateMachine fallback unresolved");
         }
 
         ReferenceDescription? method = _browse.FindMethods(readySubstateNodeId, [methodName]).FirstOrDefault();
         if (method is null)
         {
-            return new MethodReport(methodName, Found: false, NodeId: null, "not found under ReadySubstateMachine fallback");
+            return _methodMetadata.CreateMissingMethodReport(methodName, "not found under ReadySubstateMachine fallback");
         }
 
-        return new MethodReport(
+        return _methodMetadata.Discover(
             methodName,
-            Found: true,
-            _browse.ToNodeId(method.NodeId)?.ToString() ?? method.NodeId.ToString(),
+            method,
+            readySubstateNodeId,
             "local NodeSet fallback: ReadySubstateMachine qualified method browse");
     }
 

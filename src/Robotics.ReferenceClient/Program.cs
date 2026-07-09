@@ -17,6 +17,13 @@ internal static class Program
         Console.WriteLine("OPC UA Robotics Reference Client");
         Console.WriteLine($"Endpoint: {endpointUrl}");
 
+        bool callMode = MethodCallCommand.TryParse(args, out MethodCallCommand? callCommand, out string? commandError);
+        if (commandError is not null)
+        {
+            Console.WriteLine(commandError);
+            return 1;
+        }
+
         try
         {
             var clientApplication = new OpcUaClientApplication();
@@ -26,6 +33,18 @@ internal static class Program
 
             var discovery = new RoboticsDiscoveryService(session);
             DiscoveryReport report = discovery.Discover(endpointUrl);
+
+            if (callMode)
+            {
+                Console.WriteLine($"Connected: {(report.Connected ? "yes" : "no")}");
+                if (!report.Connected || report.RoboticsNamespaceIndex is null)
+                {
+                    Console.WriteLine("Robotics namespace is missing.");
+                    return 1;
+                }
+
+                return new MethodCallService(session).Invoke(report, callCommand!);
+            }
 
             new ConsoleDiscoveryReportPrinter().Print(report);
 

@@ -131,6 +131,17 @@ internal sealed class RoboticsBrowseHelpers(Session session)
             .FirstOrDefault(reference => reference.BrowseName == expected);
     }
 
+    public ReferenceDescription? FindStandardProperty(NodeId parentNodeId, string standardBrowseName)
+    {
+        // Official specification truth: InputArguments and OutputArguments are standard OPC UA BrowseNames
+        // in namespace 0 and are reached from the Method node via HasProperty when present.
+        // Implementation decision: match the qualified BrowseName, never the DisplayName.
+        var expected = new QualifiedName(standardBrowseName, namespaceIndex: 0);
+
+        return BrowseForward(parentNodeId, ReferenceTypeIds.HasProperty, includeSubtypes: true, NodeClass.Variable)
+            .FirstOrDefault(reference => reference.BrowseName == expected);
+    }
+
     public IReadOnlyList<ReferenceDescription> FindChildrenByType(NodeId parentNodeId, NodeId referenceTypeId, NodeId expectedType)
     {
         return BrowseForward(parentNodeId, referenceTypeId, includeSubtypes: true, NodeClass.Object)
@@ -164,7 +175,7 @@ internal sealed class RoboticsBrowseHelpers(Session session)
         return (ushort)namespaceIndex;
     }
 
-    private static string FormatBrowseName(QualifiedName browseName)
+    public static string FormatBrowseName(QualifiedName browseName)
     {
         return browseName.NamespaceIndex == 0
             ? browseName.Name
