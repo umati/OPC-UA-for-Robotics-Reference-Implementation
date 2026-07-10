@@ -2,7 +2,7 @@ using Robotics.ReferenceClient.Reporting;
 
 namespace Robotics.ReferenceClient.Client;
 
-internal sealed class DemoSequenceService(MethodCallService methodCallService)
+internal sealed class DemoSequenceService(MethodCallService methodCallService, SnapshotReadService? snapshotReadService = null)
 {
     public async Task<int> ExecuteAsync(DiscoveryReport report, DemoCommand command)
     {
@@ -34,6 +34,8 @@ internal sealed class DemoSequenceService(MethodCallService methodCallService)
             DemoStep step = steps[index];
             Console.WriteLine();
             Console.WriteLine($"Step {index + 1}/{steps.Count}: {step.Name}");
+            var stepCommand = new MethodCallCommand(step.Target, step.MethodName, [], command.SnapshotOptions);
+            PrintSnapshotIfEnabled(report, stepCommand, "before", command.SnapshotOptions.Before);
 
             IReadOnlyList<string>? inputs = ResolveInputs(report, step, command, out string? inputDiagnostic, out bool refusedBeforeCall);
             if (!string.IsNullOrWhiteSpace(inputDiagnostic))
@@ -51,11 +53,13 @@ internal sealed class DemoSequenceService(MethodCallService methodCallService)
             }
             else
             {
-                var callCommand = new MethodCallCommand(step.Target, step.MethodName, inputs);
+                var callCommand = new MethodCallCommand(step.Target, step.MethodName, inputs, command.SnapshotOptions);
                 MethodCallResult callResult = methodCallService.InvokeStep(report, callCommand);
                 string statusCode = callResult.StatusCode ?? callResult.Error ?? "failed before call";
                 stepResult = new DemoStepResult(step.Name, callResult.Succeeded, statusCode);
             }
+
+            PrintSnapshotIfEnabled(report, stepCommand, "after", command.SnapshotOptions.After);
 
             results.Add(stepResult);
             if (!stepResult.Succeeded)
@@ -75,6 +79,21 @@ internal sealed class DemoSequenceService(MethodCallService methodCallService)
 
         PrintSummary(results, firstFailedStep);
         return firstFailedStep is null ? 0 : 1;
+    }
+
+    private void PrintSnapshotIfEnabled(
+        DiscoveryReport report,
+        MethodCallCommand command,
+        string timing,
+        bool enabled)
+    {
+        if (!enabled || snapshotReadService is null)
+        {
+            return;
+        }
+
+        SnapshotReport snapshot = snapshotReadService.Read(report);
+        new ConsoleSnapshotPrinter().Print(timing, command.QualifiedTarget, snapshot);
     }
 
     private IReadOnlyList<string>? ResolveInputs(
@@ -97,7 +116,7 @@ internal sealed class DemoSequenceService(MethodCallService methodCallService)
             return [];
         }
 
-        var stopCommand = new MethodCallCommand(step.Target, step.MethodName, []);
+        var stopCommand = new MethodCallCommand(step.Target, step.MethodName, [], SnapshotOptions.None);
         if (!methodCallService.TryGetInputArgumentMetadata(report, stopCommand, out IReadOnlyList<MethodArgumentReport> arguments, out string? status, out string? error))
         {
             diagnostic = $"Error: {error}";

@@ -55,7 +55,11 @@ internal static class Program
                     return 1;
                 }
 
-                return new MethodCallService(session).Invoke(report, callCommand!);
+                SnapshotReadService? snapshotReadService = callCommand!.SnapshotOptions.Enabled
+                    ? new SnapshotReadService(session)
+                    : null;
+
+                return new MethodCallService(session).Invoke(report, callCommand, snapshotReadService);
             }
 
             if (demoMode)
@@ -68,7 +72,11 @@ internal static class Program
                 }
 
                 var methodCallService = new MethodCallService(session);
-                return await new DemoSequenceService(methodCallService).ExecuteAsync(report, demoCommand!);
+                SnapshotReadService? snapshotReadService = demoCommand!.SnapshotOptions.Enabled
+                    ? new SnapshotReadService(session)
+                    : null;
+
+                return await new DemoSequenceService(methodCallService, snapshotReadService).ExecuteAsync(report, demoCommand);
             }
 
             new ConsoleDiscoveryReportPrinter().Print(report);

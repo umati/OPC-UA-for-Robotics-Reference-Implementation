@@ -7,12 +7,14 @@ namespace Robotics.ReferenceClient.Client;
 
 internal sealed class MethodCallService(Session session)
 {
-    public int Invoke(DiscoveryReport report, MethodCallCommand command)
+    public int Invoke(DiscoveryReport report, MethodCallCommand command, SnapshotReadService? snapshotReadService = null)
     {
         Console.WriteLine($"Mode: call");
         Console.WriteLine($"Target: {command.QualifiedTarget}");
 
+        PrintSnapshotIfEnabled(report, command, "before", command.SnapshotOptions.Before, snapshotReadService);
         MethodCallResult result = InvokeStep(report, command);
+        PrintSnapshotIfEnabled(report, command, "after", command.SnapshotOptions.After, snapshotReadService);
         return result.Succeeded ? 0 : 1;
     }
 
@@ -185,6 +187,27 @@ internal sealed class MethodCallService(Session session)
 
             _ => []
         };
+    }
+
+    private static void PrintSnapshotIfEnabled(
+        DiscoveryReport report,
+        MethodCallCommand command,
+        string timing,
+        bool enabled,
+        SnapshotReadService? snapshotReadService)
+    {
+        if (!enabled || snapshotReadService is null)
+        {
+            return;
+        }
+
+        // Official specification truth: this is a read-only OPC UA attribute read; method-call success remains
+        // defined only by the OPC UA Call StatusCode printed by InvokeStep.
+        // Local NodeSet/generated-code truth: snapshot discovery starts from the C1/C2 discovered nodes and
+        // generated Robotics BrowseName constants.
+        // Implementation decision: snapshot read failures are printed per value and do not override call status.
+        SnapshotReport snapshot = snapshotReadService.Read(report);
+        new ConsoleSnapshotPrinter().Print(timing, command.QualifiedTarget, snapshot);
     }
 
     private static bool TryCreateInputArguments(

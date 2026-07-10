@@ -3,7 +3,8 @@ namespace Robotics.ReferenceClient.Client;
 internal sealed record MethodCallCommand(
     MethodCallTarget Target,
     string MethodName,
-    IReadOnlyList<string> InputValues)
+    IReadOnlyList<string> InputValues,
+    SnapshotOptions SnapshotOptions)
 {
     public string TargetLabel => Target == MethodCallTarget.TaskControlOperation
         ? "TaskControlOperation"
@@ -51,10 +52,24 @@ internal sealed record MethodCallCommand(
             return false;
         }
 
+        var inputValues = new List<string>();
+        SnapshotOptions snapshotOptions = SnapshotOptions.None;
+        for (int index = callIndex + 3; index < args.Count; index++)
+        {
+            if (SnapshotOptions.TryConsume(args[index], snapshotOptions, out SnapshotOptions updated))
+            {
+                snapshotOptions = updated;
+                continue;
+            }
+
+            inputValues.Add(args[index]);
+        }
+
         command = new MethodCallCommand(
             target,
             methodName,
-            args.Skip(callIndex + 3).ToArray());
+            inputValues,
+            snapshotOptions);
         return true;
     }
 }

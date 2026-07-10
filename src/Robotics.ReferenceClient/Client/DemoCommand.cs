@@ -9,7 +9,8 @@ internal sealed record DemoCommand(
     bool ContinueOnFailure,
     int DelayMilliseconds,
     int StopMode,
-    bool StopModeWasSupplied)
+    bool StopModeWasSupplied,
+    SnapshotOptions SnapshotOptions)
 {
     public const string DefaultProgramName = "PickAndPlace";
     public const int DefaultDelayMilliseconds = 500;
@@ -45,6 +46,7 @@ internal sealed record DemoCommand(
         int delayMilliseconds = DefaultDelayMilliseconds;
         int stopMode = DefaultStopMode;
         bool stopModeWasSupplied = false;
+        SnapshotOptions snapshotOptions = SnapshotOptions.None;
 
         int index = demoIndex + 2;
         while (index < args.Count)
@@ -53,6 +55,11 @@ internal sealed record DemoCommand(
             if (string.Equals(option, "--continue-on-failure", StringComparison.OrdinalIgnoreCase))
             {
                 continueOnFailure = true;
+                index++;
+            }
+            else if (SnapshotOptions.TryConsume(option, snapshotOptions, out SnapshotOptions updated))
+            {
+                snapshotOptions = updated;
                 index++;
             }
             else if (string.Equals(option, "--program", StringComparison.OrdinalIgnoreCase))
@@ -106,7 +113,8 @@ internal sealed record DemoCommand(
             continueOnFailure,
             delayMilliseconds,
             stopMode,
-            stopModeWasSupplied);
+            stopModeWasSupplied,
+            snapshotOptions);
         return true;
     }
 
