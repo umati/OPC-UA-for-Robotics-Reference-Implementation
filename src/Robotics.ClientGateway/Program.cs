@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<OpcUaOptions>(builder.Configuration.GetSection("OpcUa"));
 builder.Services.Configure<GatewayOptions>(builder.Configuration.GetSection("Gateway"));
 builder.Services.AddScoped<GatewayOpcUaClient>();
+builder.Services.AddScoped<LiveStreamService>();
 
 string[] corsAllowedOrigins = builder.Configuration
     .GetSection("Gateway:CorsAllowedOrigins")
@@ -34,6 +35,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
+app.UseWebSockets();
 
 app.MapGet("/health", () => Results.Ok(new
 {
@@ -69,6 +71,14 @@ app.MapGet("/api/robotics/snapshot", async Task<IResult> (
     return result.Snapshot is not null
         ? Results.Json(result.Snapshot, statusCode: result.StatusCode)
         : Results.Json(result.Error, statusCode: result.StatusCode);
+});
+
+app.MapGet("/ws/robotics/live", async (
+    HttpContext context,
+    LiveStreamService liveStreamService,
+    CancellationToken cancellationToken) =>
+{
+    await liveStreamService.HandleAsync(context, cancellationToken);
 });
 
 app.MapPost("/api/robotics/system/get-ready", async Task<IResult> (
