@@ -133,6 +133,111 @@ public sealed class GatewayOpcUaClient(
         }
     }
 
+    public async Task<MethodCallResultDto> CallTaskAsync(
+        string methodName,
+        MethodCallRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        return await CallOperationMethodAsync(
+            MethodInvocationTarget.TaskControlOperation,
+            methodName,
+            request,
+            GetInputAliases(methodName),
+            cancellationToken);
+    }
+
+    public async Task<MethodCallResultDto> CallSystemAsync(
+        string methodName,
+        MethodCallRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        return await CallOperationMethodAsync(
+            MethodInvocationTarget.SystemOperation,
+            methodName,
+            request,
+            GetInputAliases(methodName),
+            cancellationToken);
+    }
+
+    private async Task<MethodCallResultDto> CallOperationMethodAsync(
+        MethodInvocationTarget target,
+        string methodName,
+        MethodCallRequestDto? request,
+        IReadOnlyDictionary<string, string> inputAliases,
+        CancellationToken cancellationToken)
+    {
+        string endpointUrl = opcUaOptions.Value.EndpointUrl;
+
+        try
+        {
+            ApplicationConfiguration configuration = await CreateConfigurationAsync();
+
+            // Implementation decision for C9: keep C7/C8's short-lived session per HTTP request and reuse
+            // core discovery plus the shared method invocation service.
+            using var session = await new OpcUaSessionFactory(configuration).CreateSessionAsync(endpointUrl, cancellationToken);
+
+            DiscoveryReport discoveryReport = new RoboticsDiscoveryService(session).Discover(endpointUrl);
+            if (!discoveryReport.Connected)
+            {
+                return MethodCallFailure(
+                    "OPC UA connection failed",
+                    "Discovery did not report an active OPC UA connection.",
+                    endpointUrl,
+                    HttpStatusCodes.Status502BadGateway);
+            }
+
+            if (discoveryReport.RoboticsNamespaceIndex is null)
+            {
+                return MethodCallFailure(
+                    "Robotics discovery failed",
+                    string.Join("; ", discoveryReport.Warnings.DefaultIfEmpty("Robotics namespace is missing.")),
+                    endpointUrl,
+                    HttpStatusCodes.Status424FailedDependency);
+            }
+
+            var invocationRequest = new MethodInvocationRequest(
+                target,
+                methodName,
+                PositionalInputValues: [],
+                request.ToNamedInputs(),
+                inputAliases);
+
+            MethodInvocationResult invocationResult = new MethodInvocationService(session).Invoke(discoveryReport, invocationRequest);
+            if (invocationResult.Outcome != MethodInvocationOutcome.Called)
+            {
+                return MethodCallFailure(
+                    GetMethodCallError(invocationResult.Outcome),
+                    GetMethodCallErrorDetails(invocationResult),
+                    endpointUrl,
+                    GetMethodCallHttpStatusCode(invocationResult.Outcome));
+            }
+
+            return new MethodCallResultDto(
+                new MethodCallResponseDto(
+                    endpointUrl,
+                    invocationResult.Target,
+                    invocationResult.ObjectId,
+                    invocationResult.MethodId,
+                    invocationResult.InputArguments.Select(ToDto).ToArray(),
+                    invocationResult.CallStatusCode,
+                    invocationResult.Success,
+                    invocationResult.OutputArguments.Select(ToDto).ToArray(),
+                    invocationResult.InputArgumentResults,
+                    invocationResult.DiagnosticInfos,
+                    invocationResult.Warnings),
+                Error: null,
+                HttpStatusCodes.Status200OK);
+        }
+        catch (Exception ex) when (IsExpectedOpcUaFailure(ex))
+        {
+            return MethodCallFailure(
+                "OPC UA connection failed",
+                ToSafeError(ex),
+                endpointUrl,
+                HttpStatusCodes.Status502BadGateway);
+        }
+    }
+
     private async Task<ApplicationConfiguration> CreateConfigurationAsync()
     {
         // Implementation decision: reuse the core UA client configuration discipline with a distinct
@@ -176,6 +281,82 @@ public sealed class GatewayOpcUaClient(
             statusCode);
     }
 
+    private static MethodCallResultDto MethodCallFailure(string error, string details, string endpointUrl, int statusCode)
+    {
+        return new MethodCallResultDto(
+            Response: null,
+            new ErrorDto(error, details, endpointUrl),
+            statusCode);
+    }
+
+    private static IReadOnlyDictionary<string, string> GetInputAliases(string methodName)
+    {
+        if (string.Equals(methodName, Opc.Ua.Robotics.BrowseNames.LoadByName, StringComparison.Ordinal))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["programName"] = "string"
+            };
+        }
+
+        if (string.Equals(methodName, Opc.Ua.Robotics.BrowseNames.Stop, StringComparison.Ordinal))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["stopMode"] = "integer"
+            };
+        }
+
+        return new Dictionary<string, string>();
+    }
+
+    private static string GetMethodCallError(MethodInvocationOutcome outcome)
+    {
+        return outcome switch
+        {
+            MethodInvocationOutcome.Missing => "Method target not found",
+            MethodInvocationOutcome.Ambiguous => "Method target is ambiguous",
+            MethodInvocationOutcome.UnsupportedMetadata => "Unsupported method metadata",
+            MethodInvocationOutcome.InvalidInput => "Invalid method input",
+            MethodInvocationOutcome.InvalidNodeId => "Invalid discovered method NodeId",
+            _ => "Method invocation failed"
+        };
+    }
+
+    private static string GetMethodCallErrorDetails(MethodInvocationResult result)
+    {
+        var details = new List<string>();
+        if (!string.IsNullOrWhiteSpace(result.Error))
+        {
+            details.Add(result.Error);
+        }
+        else
+        {
+            details.Add("Method invocation was rejected before OPC UA Call.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.Evidence))
+        {
+            details.Add($"Evidence: {result.Evidence}");
+        }
+
+        details.AddRange(result.Warnings);
+        return string.Join(" ", details);
+    }
+
+    private static int GetMethodCallHttpStatusCode(MethodInvocationOutcome outcome)
+    {
+        return outcome switch
+        {
+            MethodInvocationOutcome.Missing => HttpStatusCodes.Status404NotFound,
+            MethodInvocationOutcome.Ambiguous => HttpStatusCodes.Status409Conflict,
+            MethodInvocationOutcome.UnsupportedMetadata => HttpStatusCodes.Status422UnprocessableEntity,
+            MethodInvocationOutcome.InvalidInput => HttpStatusCodes.Status400BadRequest,
+            MethodInvocationOutcome.InvalidNodeId => HttpStatusCodes.Status424FailedDependency,
+            _ => HttpStatusCodes.Status502BadGateway
+        };
+    }
+
     private static IReadOnlyList<SnapshotNode> FilterSnapshotNodes(IReadOnlyList<SnapshotNode> nodes, SnapshotSelection selection)
     {
         IReadOnlyList<string> selectedSections = GetSelectedSections(selection);
@@ -215,6 +396,15 @@ public sealed class GatewayOpcUaClient(
             report.ServerTimestamp,
             report.Value,
             report.Heuristic ? "heuristic" : "standard");
+    }
+
+    private static MethodCallArgumentDto ToDto(MethodInvocationArgumentValue argument)
+    {
+        return new MethodCallArgumentDto(
+            argument.Name,
+            argument.DataType,
+            argument.ValueRank,
+            argument.ValueText);
     }
 
     private static DiscoveryDto ToDto(DiscoveryReport report)

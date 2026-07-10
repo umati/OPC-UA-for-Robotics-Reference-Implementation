@@ -1,6 +1,8 @@
 using Robotics.ClientGateway.Dtos;
 using Robotics.ClientGateway.Options;
 using Robotics.ClientGateway.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,7 +71,95 @@ app.MapGet("/api/robotics/snapshot", async Task<IResult> (
         : Results.Json(result.Error, statusCode: result.StatusCode);
 });
 
+app.MapPost("/api/robotics/system/get-ready", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallSystemAsync(Opc.Ua.Robotics.BrowseNames.GetReady, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/system/start", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallSystemAsync(Opc.Ua.Robotics.BrowseNames.Start, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/system/stop", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallSystemAsync(Opc.Ua.Robotics.BrowseNames.Stop, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/system/stand-down", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallSystemAsync(Opc.Ua.Robotics.BrowseNames.StandDown, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/task/load-by-name", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallTaskAsync(Opc.Ua.Robotics.BrowseNames.LoadByName, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/task/start", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallTaskAsync(Opc.Ua.Robotics.BrowseNames.Start, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/task/stop", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallTaskAsync(Opc.Ua.Robotics.BrowseNames.Stop, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/task/reset-to-program-start", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallTaskAsync(Opc.Ua.Robotics.BrowseNames.ResetToProgramStart, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
+app.MapPost("/api/robotics/task/unload-program", async Task<IResult> (
+    [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    MethodCallResultDto result = await client.CallTaskAsync(Opc.Ua.Robotics.BrowseNames.UnloadProgram, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
+});
+
 app.Run();
+
+static IResult ToMethodCallHttpResult(MethodCallResultDto result)
+{
+    return result.Response is not null
+        ? Results.Json(result.Response, statusCode: result.StatusCode)
+        : Results.Json(result.Error, statusCode: result.StatusCode);
+}
 
 static bool TryParseSnapshotSelection(string? selection, out SnapshotSelection parsed)
 {
