@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using Opc.Ua;
+using HttpStatusCodes = Microsoft.AspNetCore.Http.StatusCodes;
 using Robotics.Client.Core.Client;
 using Robotics.Client.Core.Discovery;
 using Robotics.Client.Core.Reporting;
@@ -12,6 +13,9 @@ public sealed class GatewayOpcUaClient(
     IOptions<OpcUaOptions> opcUaOptions,
     ILogger<GatewayOpcUaClient> logger)
 {
+    private static readonly string[] StateSnapshotSections = ["SystemOperation", "TaskControlOperation"];
+    private static readonly string[] EquipmentSnapshotSections = ["MotionDevice", "Axes", "PowerTrains"];
+
     public async Task<OpcUaStatusDto> GetStatusAsync(CancellationToken cancellationToken)
     {
         string endpointUrl = opcUaOptions.Value.EndpointUrl;
@@ -65,6 +69,70 @@ public sealed class GatewayOpcUaClient(
         }
     }
 
+    public async Task<SnapshotResult> GetSnapshotAsync(SnapshotSelection selection, CancellationToken cancellationToken)
+    {
+        string endpointUrl = opcUaOptions.Value.EndpointUrl;
+
+        try
+        {
+            ApplicationConfiguration configuration = await CreateConfigurationAsync();
+
+            // Implementation decision for C8: keep C7's short-lived session per HTTP request.
+            using var session = await new OpcUaSessionFactory(configuration).CreateSessionAsync(endpointUrl, cancellationToken);
+
+            DiscoveryReport discoveryReport = new RoboticsDiscoveryService(session).Discover(endpointUrl);
+            if (!discoveryReport.Connected)
+            {
+                return Failure(
+                    "OPC UA connection failed",
+                    "Discovery did not report an active OPC UA connection.",
+                    endpointUrl,
+                    HttpStatusCodes.Status502BadGateway);
+            }
+
+            if (discoveryReport.RoboticsNamespaceIndex is null)
+            {
+                return Failure(
+                    "Robotics discovery failed",
+                    string.Join("; ", discoveryReport.Warnings.DefaultIfEmpty("Robotics namespace is missing.")),
+                    endpointUrl,
+                    HttpStatusCodes.Status424FailedDependency);
+            }
+
+            // Official specification truth: these are read-only OPC UA Value/DataType/ValueRank attribute reads.
+            // Local NodeSet/generated-code truth: snapshot discovery starts from the standards-aware discovery report
+            // and generated Robotics BrowseName constants already used by the console client.
+            // Implementation decision: the gateway filters core-discovered snapshot sections by category and does not
+            // invent additional browse rules, NodeIds, state semantics, or value interpretations.
+            IReadOnlyList<SnapshotNode> snapshotNodes = new SnapshotDiscoveryService(session).Discover(discoveryReport);
+            IReadOnlyList<SnapshotNode> selectedNodes = FilterSnapshotNodes(snapshotNodes, selection);
+            SnapshotReport snapshotReport = new SnapshotReadService(session).ReadNodes(selectedNodes);
+            IReadOnlyList<string> selectedSections = GetSelectedSections(selection);
+
+            var snapshot = new SnapshotDto(
+                endpointUrl,
+                Connected: true,
+                RoboticsNamespaceFound: true,
+                RoboticsNamespaceIndex: discoveryReport.RoboticsNamespaceIndex,
+                GeneratedAtUtc: DateTime.UtcNow,
+                Sections: snapshotReport.Sections
+                    .Where(section => selectedSections.Contains(section.Name, StringComparer.Ordinal))
+                    .Select(ToDto)
+                    .ToArray(),
+                Warnings: discoveryReport.Warnings);
+
+            return new SnapshotResult(snapshot, Error: null, HttpStatusCodes.Status200OK);
+        }
+        catch (Exception ex) when (IsExpectedOpcUaFailure(ex))
+        {
+            return Failure(
+                "OPC UA connection failed",
+                ToSafeError(ex),
+                endpointUrl,
+                HttpStatusCodes.Status502BadGateway);
+        }
+    }
+
     private async Task<ApplicationConfiguration> CreateConfigurationAsync()
     {
         // Implementation decision: reuse the core UA client configuration discipline with a distinct
@@ -98,6 +166,55 @@ public sealed class GatewayOpcUaClient(
         }
 
         return ex.Message;
+    }
+
+    private static SnapshotResult Failure(string error, string details, string endpointUrl, int statusCode)
+    {
+        return new SnapshotResult(
+            Snapshot: null,
+            new ErrorDto(error, details, endpointUrl),
+            statusCode);
+    }
+
+    private static IReadOnlyList<SnapshotNode> FilterSnapshotNodes(IReadOnlyList<SnapshotNode> nodes, SnapshotSelection selection)
+    {
+        IReadOnlyList<string> selectedSections = GetSelectedSections(selection);
+        return nodes
+            .Where(node => selectedSections.Contains(node.SectionName, StringComparer.Ordinal))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string> GetSelectedSections(SnapshotSelection selection)
+    {
+        return selection switch
+        {
+            SnapshotSelection.States => StateSnapshotSections,
+            SnapshotSelection.Equipment => EquipmentSnapshotSections,
+            SnapshotSelection.All => StateSnapshotSections.Concat(EquipmentSnapshotSections).ToArray(),
+            _ => StateSnapshotSections.Concat(EquipmentSnapshotSections).ToArray()
+        };
+    }
+
+    private static SnapshotSectionDto ToDto(SnapshotSectionReport report)
+    {
+        return new SnapshotSectionDto(
+            report.Name,
+            report.Values.Select(ToDto).ToArray());
+    }
+
+    private static SnapshotValueDto ToDto(SnapshotValueReport report)
+    {
+        return new SnapshotValueDto(
+            report.Label,
+            report.BrowseName,
+            report.NodeId,
+            report.DataType,
+            report.ValueRank,
+            report.StatusCode,
+            report.SourceTimestamp,
+            report.ServerTimestamp,
+            report.Value,
+            report.Heuristic ? "heuristic" : "standard");
     }
 
     private static DiscoveryDto ToDto(DiscoveryReport report)

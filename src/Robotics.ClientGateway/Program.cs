@@ -1,3 +1,4 @@
+using Robotics.ClientGateway.Dtos;
 using Robotics.ClientGateway.Options;
 using Robotics.ClientGateway.Services;
 
@@ -48,4 +49,49 @@ app.MapGet("/api/robotics/discovery", async (GatewayOpcUaClient client, Cancella
     return Results.Ok(await client.DiscoverAsync(cancellationToken));
 });
 
+app.MapGet("/api/robotics/snapshot", async Task<IResult> (
+    string? selection,
+    GatewayOpcUaClient client,
+    Microsoft.Extensions.Options.IOptions<OpcUaOptions> opcUaOptions,
+    CancellationToken cancellationToken) =>
+{
+    if (!TryParseSnapshotSelection(selection, out SnapshotSelection parsedSelection))
+    {
+        return Results.BadRequest(new ErrorDto(
+            "Invalid snapshot selection",
+            "selection must be one of: states, equipment, all.",
+            opcUaOptions.Value.EndpointUrl));
+    }
+
+    SnapshotResult result = await client.GetSnapshotAsync(parsedSelection, cancellationToken);
+    return result.Snapshot is not null
+        ? Results.Json(result.Snapshot, statusCode: result.StatusCode)
+        : Results.Json(result.Error, statusCode: result.StatusCode);
+});
+
 app.Run();
+
+static bool TryParseSnapshotSelection(string? selection, out SnapshotSelection parsed)
+{
+    if (string.IsNullOrWhiteSpace(selection) ||
+        string.Equals(selection, "all", StringComparison.OrdinalIgnoreCase))
+    {
+        parsed = SnapshotSelection.All;
+        return true;
+    }
+
+    if (string.Equals(selection, "states", StringComparison.OrdinalIgnoreCase))
+    {
+        parsed = SnapshotSelection.States;
+        return true;
+    }
+
+    if (string.Equals(selection, "equipment", StringComparison.OrdinalIgnoreCase))
+    {
+        parsed = SnapshotSelection.Equipment;
+        return true;
+    }
+
+    parsed = SnapshotSelection.All;
+    return false;
+}
