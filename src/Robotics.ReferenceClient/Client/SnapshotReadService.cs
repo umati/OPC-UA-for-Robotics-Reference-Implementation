@@ -1,4 +1,3 @@
-using System.Globalization;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Robotics.ReferenceClient.Discovery;
@@ -13,6 +12,11 @@ internal sealed class SnapshotReadService(Session session)
     public SnapshotReport Read(DiscoveryReport discoveryReport)
     {
         IReadOnlyList<SnapshotNode> nodes = _discovery.Discover(discoveryReport);
+        return ReadNodes(nodes);
+    }
+
+    public SnapshotReport ReadNodes(IReadOnlyList<SnapshotNode> nodes)
+    {
         var valuesBySection = new Dictionary<string, List<SnapshotValueReport>>(StringComparer.Ordinal)
         {
             ["SystemOperation"] = [],
@@ -123,7 +127,7 @@ internal sealed class SnapshotReadService(Session session)
             NodeId nodeId => nodeId.ToString(),
             ExpandedNodeId expandedNodeId => expandedNodeId.ToString(),
             null => null,
-            _ => Convert.ToString(results[1].Value, CultureInfo.InvariantCulture)
+            _ => Convert.ToString(results[1].Value, System.Globalization.CultureInfo.InvariantCulture)
         };
     }
 
@@ -139,7 +143,7 @@ internal sealed class SnapshotReadService(Session session)
             int valueRank => valueRank,
             short valueRank => valueRank,
             null => null,
-            _ when int.TryParse(Convert.ToString(results[2].Value, CultureInfo.InvariantCulture), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) => parsed,
+            _ when int.TryParse(Convert.ToString(results[2].Value, System.Globalization.CultureInfo.InvariantCulture), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int parsed) => parsed,
             _ => null
         };
     }
@@ -151,43 +155,6 @@ internal sealed class SnapshotReadService(Session session)
 
     private static string FormatValue(object? value)
     {
-        return value switch
-        {
-            null => "null",
-            bool boolean => boolean.ToString().ToLowerInvariant(),
-            sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal =>
-                Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
-            string text => text,
-            LocalizedText localizedText => localizedText.Text ?? string.Empty,
-            QualifiedName qualifiedName => RoboticsBrowseHelpers.FormatBrowseName(qualifiedName),
-            NodeId nodeId => nodeId.ToString(),
-            ExpandedNodeId expandedNodeId => expandedNodeId.ToString(),
-            ExtensionObject extensionObject => FormatExtensionObject(extensionObject),
-            Array array => FormatArray(array),
-            Variant variant => FormatValue(variant.Value),
-            _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? value.GetType().FullName ?? string.Empty
-        };
-    }
-
-    private static string FormatArray(Array array)
-    {
-        const int maxItems = 5;
-        string items = string.Join(", ", array.Cast<object?>().Take(maxItems).Select(FormatValue));
-        string suffix = array.Length > maxItems ? ", ..." : string.Empty;
-        return $"count={array.Length} [{items}{suffix}]";
-    }
-
-    private static string FormatExtensionObject(ExtensionObject extensionObject)
-    {
-        string typeId = extensionObject.TypeId?.ToString() ?? "null";
-        string body = extensionObject.Body switch
-        {
-            null => "null",
-            IEncodeable encodeable => encodeable.GetType().Name,
-            byte[] bytes => $"ByteString({bytes.Length} bytes)",
-            _ => extensionObject.Body.GetType().Name
-        };
-
-        return $"ExtensionObject(TypeId={typeId}, Body={body})";
+        return SafeValueRenderer.Format(value);
     }
 }
