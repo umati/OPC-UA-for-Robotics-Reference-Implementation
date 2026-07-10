@@ -1,10 +1,10 @@
 using Opc.Ua;
 using Opc.Ua.Client;
-using Robotics.ReferenceClient.Reporting;
+using Robotics.Client.Core.Reporting;
 
-namespace Robotics.ReferenceClient.Discovery;
+namespace Robotics.Client.Core.Discovery;
 
-internal sealed class SnapshotDiscoveryService(Session session)
+public sealed class SnapshotDiscoveryService(Session session)
 {
     private const int MaxEquipmentValuesPerSection = 12;
     private const string LockedBrowseName = "Locked";

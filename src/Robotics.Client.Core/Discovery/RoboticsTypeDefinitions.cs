@@ -1,8 +1,8 @@
 using Opc.Ua;
 
-namespace Robotics.ReferenceClient.Discovery;
+namespace Robotics.Client.Core.Discovery;
 
-internal sealed class RoboticsTypeDefinitions
+public sealed class RoboticsTypeDefinitions
 {
     private RoboticsTypeDefinitions(
         NodeId motionDeviceSystemType,

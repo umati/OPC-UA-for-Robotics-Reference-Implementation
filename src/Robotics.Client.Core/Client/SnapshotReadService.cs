@@ -1,11 +1,11 @@
 using Opc.Ua;
 using Opc.Ua.Client;
-using Robotics.ReferenceClient.Discovery;
-using Robotics.ReferenceClient.Reporting;
+using Robotics.Client.Core.Discovery;
+using Robotics.Client.Core.Reporting;
 
-namespace Robotics.ReferenceClient.Client;
+namespace Robotics.Client.Core.Client;
 
-internal sealed class SnapshotReadService(Session session)
+public sealed class SnapshotReadService(Session session)
 {
     private readonly SnapshotDiscoveryService _discovery = new(session);
 

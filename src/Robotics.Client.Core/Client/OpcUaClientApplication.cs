@@ -1,19 +1,42 @@
 using Opc.Ua;
 using Opc.Ua.Configuration;
 
-namespace Robotics.ReferenceClient.Client;
+namespace Robotics.Client.Core.Client;
 
-internal sealed class OpcUaClientApplication
+public sealed class OpcUaClientApplication
 {
     public const string ApplicationName = "Robotics Reference Client";
+
+    private readonly string _applicationName;
+    private readonly string _applicationUriSuffix;
+    private readonly string _productUri;
+    private readonly string _pkiRootPath;
+    private readonly string _traceOutputPath;
+    private readonly Action<string>? _developmentCertificateAccepted;
+
+    public OpcUaClientApplication(
+        string applicationName = ApplicationName,
+        string applicationUriSuffix = "RoboticsReferenceClient",
+        string productUri = "urn:RoboticsReferenceImplementation:ReferenceClient",
+        string pkiRootPath = "pki/reference-client",
+        string traceOutputPath = "Logs/RoboticsReferenceClient.log",
+        Action<string>? developmentCertificateAccepted = null)
+    {
+        _applicationName = applicationName;
+        _applicationUriSuffix = applicationUriSuffix;
+        _productUri = productUri;
+        _pkiRootPath = pkiRootPath;
+        _traceOutputPath = traceOutputPath;
+        _developmentCertificateAccepted = developmentCertificateAccepted;
+    }
 
     public async Task<ApplicationConfiguration> CreateConfigurationAsync()
     {
         var configuration = new ApplicationConfiguration
         {
-            ApplicationName = ApplicationName,
-            ApplicationUri = Utils.Format("urn:{0}:RoboticsReferenceClient", Utils.GetHostName()),
-            ProductUri = "urn:RoboticsReferenceImplementation:ReferenceClient",
+            ApplicationName = _applicationName,
+            ApplicationUri = Utils.Format("urn:{0}:{1}", Utils.GetHostName(), _applicationUriSuffix),
+            ProductUri = _productUri,
             ApplicationType = ApplicationType.Client,
 
             SecurityConfiguration = new SecurityConfiguration
@@ -21,26 +44,26 @@ internal sealed class OpcUaClientApplication
                 ApplicationCertificate = new CertificateIdentifier
                 {
                     StoreType = CertificateStoreType.Directory,
-                    StorePath = "pki/reference-client/own",
-                    SubjectName = $"CN={ApplicationName}"
+                    StorePath = $"{_pkiRootPath}/own",
+                    SubjectName = $"CN={_applicationName}"
                 },
 
                 TrustedPeerCertificates = new CertificateTrustList
                 {
                     StoreType = CertificateStoreType.Directory,
-                    StorePath = "pki/reference-client/trusted"
+                    StorePath = $"{_pkiRootPath}/trusted"
                 },
 
                 TrustedIssuerCertificates = new CertificateTrustList
                 {
                     StoreType = CertificateStoreType.Directory,
-                    StorePath = "pki/reference-client/issuers"
+                    StorePath = $"{_pkiRootPath}/issuers"
                 },
 
                 RejectedCertificateStore = new CertificateTrustList
                 {
                     StoreType = CertificateStoreType.Directory,
-                    StorePath = "pki/reference-client/rejected"
+                    StorePath = $"{_pkiRootPath}/rejected"
                 },
 
                 AddAppCertToTrustedStore = true,
@@ -70,7 +93,7 @@ internal sealed class OpcUaClientApplication
 
             TraceConfiguration = new TraceConfiguration
             {
-                OutputFilePath = "Logs/RoboticsReferenceClient.log",
+                OutputFilePath = _traceOutputPath,
                 DeleteOnLoad = true,
                 TraceMasks = Utils.TraceMasks.Error |
                              Utils.TraceMasks.Information |
@@ -87,17 +110,14 @@ internal sealed class OpcUaClientApplication
         {
             if (eventArgs.Error.StatusCode == StatusCodes.BadCertificateUntrusted)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Development certificate policy: auto-accepting untrusted server certificate.");
-                Console.WriteLine($"Certificate subject: {eventArgs.Certificate.Subject}");
-                Console.ResetColor();
+                _developmentCertificateAccepted?.Invoke(eventArgs.Certificate.Subject);
                 eventArgs.Accept = true;
             }
         };
 
         var application = new ApplicationInstance
         {
-            ApplicationName = ApplicationName,
+            ApplicationName = _applicationName,
             ApplicationType = ApplicationType.Client,
             ApplicationConfiguration = configuration
         };

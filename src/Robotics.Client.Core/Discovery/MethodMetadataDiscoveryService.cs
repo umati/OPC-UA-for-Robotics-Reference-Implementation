@@ -1,10 +1,10 @@
 using Opc.Ua;
 using Opc.Ua.Client;
-using Robotics.ReferenceClient.Reporting;
+using Robotics.Client.Core.Reporting;
 
-namespace Robotics.ReferenceClient.Discovery;
+namespace Robotics.Client.Core.Discovery;
 
-internal sealed class MethodMetadataDiscoveryService(Session session, RoboticsBrowseHelpers browse)
+public sealed class MethodMetadataDiscoveryService(Session session, RoboticsBrowseHelpers browse)
 {
     public MethodReport CreateMissingMethodReport(string expectedName, string evidence)
     {

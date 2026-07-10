@@ -1,14 +1,14 @@
 using Opc.Ua;
 
-namespace Robotics.ReferenceClient.Reporting;
+namespace Robotics.Client.Core.Reporting;
 
-internal sealed record SnapshotReport(IReadOnlyList<SnapshotSectionReport> Sections);
+public sealed record SnapshotReport(IReadOnlyList<SnapshotSectionReport> Sections);
 
-internal sealed record SnapshotSectionReport(
+public sealed record SnapshotSectionReport(
     string Name,
     IReadOnlyList<SnapshotValueReport> Values);
 
-internal sealed record SnapshotValueReport(
+public sealed record SnapshotValueReport(
     string Label,
     string BrowseName,
     string NodeId,
@@ -20,7 +20,7 @@ internal sealed record SnapshotValueReport(
     string Value,
     bool Heuristic);
 
-internal sealed record SnapshotNode(
+public sealed record SnapshotNode(
     string SectionName,
     string Label,
     string BrowseName,

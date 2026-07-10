@@ -1,3 +1,5 @@
+using Robotics.Client.Core.Client;
+using Robotics.Client.Core.Reporting;
 using Robotics.ReferenceClient.Reporting;
 
 namespace Robotics.ReferenceClient.Client;

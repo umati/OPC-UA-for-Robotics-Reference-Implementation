@@ -1,44 +1,44 @@
-namespace Robotics.ReferenceClient.Reporting;
+namespace Robotics.Client.Core.Reporting;
 
-internal sealed record DiscoveryReport(
+public sealed record DiscoveryReport(
     string EndpointUrl,
     bool Connected,
     int? RoboticsNamespaceIndex,
     IReadOnlyList<MotionDeviceSystemReport> MotionDeviceSystems,
     IReadOnlyList<string> Warnings);
 
-internal sealed record MotionDeviceSystemReport(
+public sealed record MotionDeviceSystemReport(
     NodeDiscoveryInfo Node,
     NodeDiscoveryInfo? ControllersFolder,
     NodeDiscoveryInfo? MotionDevicesFolder,
     IReadOnlyList<ControllerReport> Controllers,
     IReadOnlyList<MotionDeviceReport> MotionDevices);
 
-internal sealed record ControllerReport(
+public sealed record ControllerReport(
     NodeDiscoveryInfo Node,
     NodeDiscoveryInfo? TaskControlsFolder,
     IReadOnlyList<TaskControlReport> TaskControls,
     OperationReport? SystemOperation);
 
-internal sealed record MotionDeviceReport(
+public sealed record MotionDeviceReport(
     NodeDiscoveryInfo Node,
     NodeDiscoveryInfo? AxesFolder,
     NodeDiscoveryInfo? PowerTrainsFolder,
     IReadOnlyList<NodeDiscoveryInfo> Axes,
     IReadOnlyList<NodeDiscoveryInfo> PowerTrains);
 
-internal sealed record TaskControlReport(
+public sealed record TaskControlReport(
     NodeDiscoveryInfo Node,
     NodeDiscoveryInfo? TaskControlOperation,
     IReadOnlyList<MethodReport> Methods);
 
-internal sealed record OperationReport(
+public sealed record OperationReport(
     NodeDiscoveryInfo Node,
     NodeDiscoveryInfo? StateMachine,
     bool IsExpectedType,
     IReadOnlyList<MethodReport> Methods);
 
-internal sealed record MethodReport(
+public sealed record MethodReport(
     string Name,
     bool Found,
     string? BrowseName,
@@ -49,7 +49,7 @@ internal sealed record MethodReport(
     MethodArgumentsReport OutputArguments,
     string Evidence);
 
-internal sealed record MethodArgumentsReport(
+public sealed record MethodArgumentsReport(
     string Status,
     string? PropertyNodeId,
     IReadOnlyList<MethodArgumentReport> Arguments,
@@ -58,14 +58,14 @@ internal sealed record MethodArgumentsReport(
     public static MethodArgumentsReport Missing { get; } = new("missing", null, [], null);
 }
 
-internal sealed record MethodArgumentReport(
+public sealed record MethodArgumentReport(
     string Name,
     string DataType,
     int ValueRank,
     string ArrayDimensions,
     string Description);
 
-internal sealed record NodeDiscoveryInfo(
+public sealed record NodeDiscoveryInfo(
     string BrowseName,
     string DisplayName,
     string NodeId,

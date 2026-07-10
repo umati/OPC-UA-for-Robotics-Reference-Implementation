@@ -1,3 +1,5 @@
+using Robotics.Client.Core.Reporting;
+
 namespace Robotics.ReferenceClient.Reporting;
 
 internal sealed class ConsoleSnapshotPrinter

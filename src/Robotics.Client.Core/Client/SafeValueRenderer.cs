@@ -1,10 +1,10 @@
 using System.Globalization;
 using Opc.Ua;
-using Robotics.ReferenceClient.Discovery;
+using Robotics.Client.Core.Discovery;
 
-namespace Robotics.ReferenceClient.Client;
+namespace Robotics.Client.Core.Client;
 
-internal static class SafeValueRenderer
+public static class SafeValueRenderer
 {
     public static string Format(object? value)
     {

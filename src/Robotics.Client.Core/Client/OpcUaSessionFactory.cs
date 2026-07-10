@@ -1,9 +1,9 @@
 using Opc.Ua;
 using Opc.Ua.Client;
 
-namespace Robotics.ReferenceClient.Client;
+namespace Robotics.Client.Core.Client;
 
-internal sealed class OpcUaSessionFactory(ApplicationConfiguration configuration)
+public sealed class OpcUaSessionFactory(ApplicationConfiguration configuration)
 {
     public async Task<Session> CreateSessionAsync(string endpointUrl, CancellationToken cancellationToken = default)
     {
@@ -24,7 +24,7 @@ internal sealed class OpcUaSessionFactory(ApplicationConfiguration configuration
             endpoint,
             updateBeforeConnect: false,
             checkDomain: false,
-            sessionName: OpcUaClientApplication.ApplicationName,
+            sessionName: configuration.ApplicationName,
             sessionTimeout: (uint)configuration.ClientConfiguration.DefaultSessionTimeout,
             identity,
             preferredLocales: null,

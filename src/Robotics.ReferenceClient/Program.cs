@@ -1,6 +1,8 @@
 using Opc.Ua;
+using Robotics.Client.Core.Client;
 using Robotics.ReferenceClient.Client;
-using Robotics.ReferenceClient.Discovery;
+using Robotics.Client.Core.Discovery;
+using Robotics.Client.Core.Reporting;
 using Robotics.ReferenceClient.Reporting;
 
 namespace Robotics.ReferenceClient;
@@ -50,7 +52,14 @@ internal static class Program
 
         try
         {
-            var clientApplication = new OpcUaClientApplication();
+            var clientApplication = new OpcUaClientApplication(
+                developmentCertificateAccepted: subject =>
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("Development certificate policy: auto-accepting untrusted server certificate.");
+                    Console.WriteLine($"Certificate subject: {subject}");
+                    Console.ResetColor();
+                });
             ApplicationConfiguration configuration = await clientApplication.CreateConfigurationAsync();
 
             using var session = await new OpcUaSessionFactory(configuration).CreateSessionAsync(endpointUrl);

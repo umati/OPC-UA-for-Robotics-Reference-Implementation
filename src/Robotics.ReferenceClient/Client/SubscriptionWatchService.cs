@@ -1,7 +1,8 @@
 using Opc.Ua;
 using Opc.Ua.Client;
-using Robotics.ReferenceClient.Discovery;
-using Robotics.ReferenceClient.Reporting;
+using Robotics.Client.Core.Client;
+using Robotics.Client.Core.Discovery;
+using Robotics.Client.Core.Reporting;
 
 namespace Robotics.ReferenceClient.Client;
 
