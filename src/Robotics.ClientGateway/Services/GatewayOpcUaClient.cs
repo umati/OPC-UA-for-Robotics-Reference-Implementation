@@ -18,7 +18,11 @@ public sealed class GatewayOpcUaClient(
 
     public async Task<OpcUaStatusDto> GetStatusAsync(CancellationToken cancellationToken)
     {
-        string endpointUrl = opcUaOptions.Value.EndpointUrl;
+        return await GetStatusAsync(opcUaOptions.Value.EndpointUrl, cancellationToken);
+    }
+
+    public async Task<OpcUaStatusDto> GetStatusAsync(string endpointUrl, CancellationToken cancellationToken)
+    {
 
         try
         {
@@ -46,7 +50,11 @@ public sealed class GatewayOpcUaClient(
 
     public async Task<DiscoveryDto> DiscoverAsync(CancellationToken cancellationToken)
     {
-        string endpointUrl = opcUaOptions.Value.EndpointUrl;
+        return await DiscoverAsync(opcUaOptions.Value.EndpointUrl, cancellationToken);
+    }
+
+    public async Task<DiscoveryDto> DiscoverAsync(string endpointUrl, CancellationToken cancellationToken)
+    {
 
         try
         {
@@ -71,7 +79,11 @@ public sealed class GatewayOpcUaClient(
 
     public async Task<SnapshotResult> GetSnapshotAsync(SnapshotSelection selection, CancellationToken cancellationToken)
     {
-        string endpointUrl = opcUaOptions.Value.EndpointUrl;
+        return await GetSnapshotAsync(opcUaOptions.Value.EndpointUrl, selection, cancellationToken);
+    }
+
+    public async Task<SnapshotResult> GetSnapshotAsync(string endpointUrl, SnapshotSelection selection, CancellationToken cancellationToken)
+    {
 
         try
         {

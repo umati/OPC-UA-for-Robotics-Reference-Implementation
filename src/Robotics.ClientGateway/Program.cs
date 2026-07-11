@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<OpcUaOptions>(builder.Configuration.GetSection("OpcUa"));
 builder.Services.Configure<GatewayOptions>(builder.Configuration.GetSection("Gateway"));
+builder.Services.AddSingleton<RobotConnectionRegistry>();
 builder.Services.AddScoped<GatewayOpcUaClient>();
 builder.Services.AddScoped<LiveStreamService>();
 
@@ -48,9 +49,48 @@ app.MapGet("/api/opcua/status", async (GatewayOpcUaClient client, CancellationTo
     return Results.Ok(await client.GetStatusAsync(cancellationToken));
 });
 
+app.MapGet("/api/robots", (RobotConnectionRegistry registry) =>
+    Results.Ok(registry.GetEnabledRobots()));
+
+app.MapGet("/api/robots/{robotId}/status", async Task<IResult> (
+    string robotId,
+    RobotConnectionRegistry registry,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    RobotConnectionOptions? robot = registry.FindEnabled(robotId);
+    if (robot is null)
+    {
+        return Results.NotFound(new ErrorDto("Robot not found", $"Robot '{robotId}' is unknown or disabled.", robotId));
+    }
+
+    OpcUaStatusDto status = await client.GetStatusAsync(robot.EndpointUrl, cancellationToken);
+    var dto = new RobotStatusDto(robot.Id, robot.DisplayName, status.EndpointUrl, status.Connected,
+        status.RoboticsNamespaceFound, status.RoboticsNamespaceIndex, status.Error);
+    return status.Connected ? Results.Ok(dto) : Results.Json(dto, statusCode: StatusCodes.Status502BadGateway);
+});
+
 app.MapGet("/api/robotics/discovery", async (GatewayOpcUaClient client, CancellationToken cancellationToken) =>
 {
     return Results.Ok(await client.DiscoverAsync(cancellationToken));
+});
+
+app.MapGet("/api/robots/{robotId}/discovery", async Task<IResult> (
+    string robotId,
+    RobotConnectionRegistry registry,
+    GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    RobotConnectionOptions? robot = registry.FindEnabled(robotId);
+    if (robot is null)
+        return Results.NotFound(new ErrorDto("Robot not found", $"Robot '{robotId}' is unknown or disabled.", robotId));
+
+    DiscoveryDto discovery = await client.DiscoverAsync(robot.EndpointUrl, cancellationToken);
+    if (!discovery.Connected)
+        return Results.Json(new ErrorDto("OPC UA connection failed", string.Join("; ", discovery.Warnings), robot.EndpointUrl), statusCode: StatusCodes.Status502BadGateway);
+    if (discovery.RoboticsNamespaceIndex is null)
+        return Results.Json(new ErrorDto("Robotics discovery failed", string.Join("; ", discovery.Warnings), robot.EndpointUrl), statusCode: StatusCodes.Status424FailedDependency);
+    return Results.Ok(discovery);
 });
 
 app.MapGet("/api/robotics/snapshot", async Task<IResult> (
@@ -71,6 +111,19 @@ app.MapGet("/api/robotics/snapshot", async Task<IResult> (
     return result.Snapshot is not null
         ? Results.Json(result.Snapshot, statusCode: result.StatusCode)
         : Results.Json(result.Error, statusCode: result.StatusCode);
+});
+
+app.MapGet("/api/robots/{robotId}/snapshot", async Task<IResult> (
+    string robotId, string? selection, RobotConnectionRegistry registry, GatewayOpcUaClient client,
+    CancellationToken cancellationToken) =>
+{
+    RobotConnectionOptions? robot = registry.FindEnabled(robotId);
+    if (robot is null)
+        return Results.NotFound(new ErrorDto("Robot not found", $"Robot '{robotId}' is unknown or disabled.", robotId));
+    if (!TryParseSnapshotSelection(selection, out SnapshotSelection parsedSelection))
+        return Results.BadRequest(new ErrorDto("Invalid snapshot selection", "selection must be one of: states, equipment, all.", robot.EndpointUrl));
+    SnapshotResult result = await client.GetSnapshotAsync(robot.EndpointUrl, parsedSelection, cancellationToken);
+    return result.Snapshot is not null ? Results.Json(result.Snapshot, statusCode: result.StatusCode) : Results.Json(result.Error, statusCode: result.StatusCode);
 });
 
 app.MapGet("/ws/robotics/live", async (
