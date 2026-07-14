@@ -5,9 +5,11 @@ import StatusBadge from './StatusBadge';
 
 export default function CommandPanel({
   base,
+  robotId,
   onDone,
 }: {
   base: string;
+  robotId: string;
   onDone: () => void;
 }) {
   const [name, setName] = useState('axis-range-demo');
@@ -33,17 +35,17 @@ export default function CommandPanel({
   };
 
   const system: [string, string, () => Promise<CallResponse>][] = [
-    ['ready', 'Get Ready', () => api.callSystemGetReady(base)],
-    ['start', 'Start', () => api.callSystemStart(base)],
-    ['stop', 'Stop', () => api.callSystemStop(base)],
-    ['standdown', 'Stand Down', () => api.callSystemStandDown(base)],
+    ['ready', 'Get Ready', () => api.callRobotSystemGetReady(base, robotId)],
+    ['start', 'Start', () => api.callRobotSystemStart(base, robotId)],
+    ['stop', 'Stop', () => api.callRobotSystemStop(base, robotId)],
+    ['standdown', 'Stand Down', () => api.callRobotSystemStandDown(base, robotId)],
   ];
 
   const task: [string, string, () => Promise<CallResponse>][] = [
-    ['taskstart', 'Start Task', () => api.callTaskStart(base)],
-    ['taskstop', 'Stop Task', () => api.callTaskStop(base)],
-    ['reset', 'Reset To Program Start', () => api.callTaskResetToProgramStart(base)],
-    ['unload', 'Unload Program', () => api.callTaskUnloadProgram(base)],
+    ['taskstart', 'Start Task', () => api.callRobotTaskStart(base, robotId)],
+    ['taskstop', 'Stop Task', () => api.callRobotTaskStop(base, robotId)],
+    ['reset', 'Reset To Program Start', () => api.callRobotTaskResetToProgramStart(base, robotId)],
+    ['unload', 'Unload Program', () => api.callRobotTaskUnloadProgram(base, robotId)],
   ];
 
   const group = (title: string, items: typeof system) => (
@@ -81,7 +83,7 @@ export default function CommandPanel({
             placeholder="Program name"
           />
 
-          <button disabled={!!busy} onClick={() => run('load', () => api.callTaskLoadByName(base, name))}>
+          <button disabled={!!busy} onClick={() => run('load', () => api.callRobotTaskLoadByName(base, robotId, name))}>
             {busy === 'load' && <span className="spinner" />}
             Load Program
           </button>

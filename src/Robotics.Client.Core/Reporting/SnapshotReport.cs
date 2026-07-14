@@ -18,7 +18,9 @@ public sealed record SnapshotValueReport(
     DateTime? SourceTimestamp,
     DateTime? ServerTimestamp,
     string Value,
-    bool Heuristic);
+    bool Heuristic,
+    string? EngineeringUnits = null,
+    string? EURange = null);
 
 public sealed record SnapshotNode(
     string SectionName,

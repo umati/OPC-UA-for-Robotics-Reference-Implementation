@@ -6,7 +6,6 @@ namespace Robotics.Client.Core.Discovery;
 
 public sealed class SnapshotDiscoveryService(Session session)
 {
-    private const int MaxEquipmentValuesPerSection = 12;
     private const string LockedBrowseName = "Locked";
     private const string RemainingLockTimeBrowseName = "RemainingLockTime";
     private const string ComponentNameBrowseName = "ComponentName";
@@ -44,6 +43,36 @@ public sealed class SnapshotDiscoveryService(Session session)
         SerialNumberBrowseName
     ];
 
+    private static readonly string[] MotionDeviceIdentityVariableNames =
+    [
+        ComponentNameBrowseName,
+        ManufacturerBrowseName,
+        ModelBrowseName,
+        ProductCodeBrowseName,
+        SerialNumberBrowseName
+    ];
+
+    private static readonly string[] AxisVariableNames =
+    [
+        Opc.Ua.Robotics.BrowseNames.ActualPosition,
+        Opc.Ua.Robotics.BrowseNames.ActualSpeed,
+        Opc.Ua.Robotics.BrowseNames.ActualAcceleration
+    ];
+
+    private static readonly string[] ControllerRuntimeVariableNames =
+    [
+        "UnderControl",
+        "OperationalMode",
+        "ProtectiveStop",
+        "EmergencyStop"
+    ];
+
+    private static readonly string[] TaskRuntimeVariableNames =
+    [
+        "TaskProgramName",
+        "TaskProgramLoaded"
+    ];
+
     private readonly RoboticsBrowseHelpers _browse = new(session);
 
     public IReadOnlyList<SnapshotNode> Discover(DiscoveryReport report)
@@ -52,6 +81,8 @@ public sealed class SnapshotDiscoveryService(Session session)
 
         foreach (MotionDeviceSystemReport system in report.MotionDeviceSystems)
         {
+            nodes.AddRange(DiscoverSafetyRuntime(system));
+
             foreach (ControllerReport controller in system.Controllers)
             {
                 if (controller.SystemOperation is not null)
@@ -59,9 +90,12 @@ public sealed class SnapshotDiscoveryService(Session session)
                     nodes.AddRange(DiscoverSystemOperation(controller.SystemOperation));
                 }
 
+                nodes.AddRange(DiscoverControllerRuntime(controller));
+
                 foreach (TaskControlReport taskControl in controller.TaskControls)
                 {
                     nodes.AddRange(DiscoverTaskControlOperation(taskControl));
+                    nodes.AddRange(DiscoverTaskRuntime(taskControl));
                 }
             }
 
@@ -69,6 +103,18 @@ public sealed class SnapshotDiscoveryService(Session session)
         }
 
         return Deduplicate(nodes);
+    }
+
+    private IReadOnlyList<SnapshotNode> DiscoverSafetyRuntime(MotionDeviceSystemReport system)
+    {
+        if (!TryParseNodeId(system.Node.NodeId, out NodeId? systemNodeId))
+        {
+            return [];
+        }
+
+        return FindVariablesByBrowseName(systemNodeId, ControllerRuntimeVariableNames, maxDepth: 5)
+            .Select(variable => CreateSnapshotNode("SystemOperation", $"{system.Node.BrowseName}.{variable.BrowseName.Name}", variable))
+            .ToArray();
     }
 
     private IReadOnlyList<SnapshotNode> DiscoverSystemOperation(OperationReport operation)
@@ -93,7 +139,7 @@ public sealed class SnapshotDiscoveryService(Session session)
             "SystemOperation",
             "SystemOperationStateMachine",
             stateMachineNodeId,
-            includeReadySubstate: false);
+            substateMachineNames: ["IdleSubstateMachine", "ExecutingSubstateMachine"]);
     }
 
     private IReadOnlyList<SnapshotNode> DiscoverTaskControlOperation(TaskControlReport taskControl)
@@ -119,14 +165,38 @@ public sealed class SnapshotDiscoveryService(Session session)
             "TaskControlOperation",
             "TaskControlStateMachine",
             stateMachineNodeId,
-            includeReadySubstate: true);
+            substateMachineNames: ["ReadySubstateMachine"]);
+    }
+
+    private IReadOnlyList<SnapshotNode> DiscoverControllerRuntime(ControllerReport controller)
+    {
+        if (!TryParseNodeId(controller.Node.NodeId, out NodeId? controllerNodeId))
+        {
+            return [];
+        }
+
+        return FindVariablesByBrowseName(controllerNodeId, ControllerRuntimeVariableNames, maxDepth: 4)
+            .Select(variable => CreateSnapshotNode("SystemOperation", $"{controller.Node.BrowseName}.{variable.BrowseName.Name}", variable))
+            .ToArray();
+    }
+
+    private IReadOnlyList<SnapshotNode> DiscoverTaskRuntime(TaskControlReport taskControl)
+    {
+        if (!TryParseNodeId(taskControl.Node.NodeId, out NodeId? taskControlNodeId))
+        {
+            return [];
+        }
+
+        return FindVariablesByBrowseName(taskControlNodeId, TaskRuntimeVariableNames, maxDepth: 2)
+            .Select(variable => CreateSnapshotNode("TaskControlOperation", $"{taskControl.Node.BrowseName}.{variable.BrowseName.Name}", variable))
+            .ToArray();
     }
 
     private IReadOnlyList<SnapshotNode> DiscoverStateMachineValues(
         string sectionName,
         string labelPrefix,
         NodeId stateMachineNodeId,
-        bool includeReadySubstate)
+        IReadOnlyList<string> substateMachineNames)
     {
         var nodes = new List<SnapshotNode>();
 
@@ -135,17 +205,17 @@ public sealed class SnapshotDiscoveryService(Session session)
             AddStateVariableWithProperties(nodes, sectionName, labelPrefix, variable);
         }
 
-        if (includeReadySubstate)
+        foreach (string substateMachineName in substateMachineNames)
         {
             ReferenceDescription? readySubstate = _browse.FindQualifiedChild(
                 stateMachineNodeId,
-                Opc.Ua.Robotics.BrowseNames.ReadySubstateMachine,
+                substateMachineName,
                 ReferenceTypeIds.HasSubStateMachine,
                 NodeClass.Object);
 
             readySubstate ??= _browse.FindQualifiedChild(
                 stateMachineNodeId,
-                Opc.Ua.Robotics.BrowseNames.ReadySubstateMachine,
+                substateMachineName,
                 ReferenceTypeIds.HasComponent,
                 NodeClass.Object);
 
@@ -153,7 +223,7 @@ public sealed class SnapshotDiscoveryService(Session session)
             {
                 foreach (ReferenceDescription variable in FindCuratedVariables(readySubstateNodeId, StateMachineVariableNames))
                 {
-                    AddStateVariableWithProperties(nodes, sectionName, "ReadySubstateMachine", variable);
+                    AddStateVariableWithProperties(nodes, sectionName, substateMachineName, variable);
                 }
             }
         }
@@ -189,40 +259,44 @@ public sealed class SnapshotDiscoveryService(Session session)
 
         foreach (MotionDeviceReport motionDevice in system.MotionDevices)
         {
-            AddCuratedEquipmentVariables(nodes, "MotionDevice", motionDevice.Node.NodeId, motionDevice.Node.BrowseName);
+            AddCuratedEquipmentVariables(nodes, "MotionDevice", motionDevice.Node.NodeId, motionDevice.Node.BrowseName, MotionDeviceIdentityVariableNames, parameterSetPath: false);
 
             foreach (NodeDiscoveryInfo axis in motionDevice.Axes)
             {
-                AddCuratedEquipmentVariables(nodes, "Axes", axis.NodeId, axis.BrowseName);
+                AddCuratedEquipmentVariables(nodes, "Axes", axis.NodeId, $"{motionDevice.Node.BrowseName}.Axes.{axis.BrowseName}", AxisVariableNames, parameterSetPath: true);
             }
 
-            foreach (NodeDiscoveryInfo powerTrain in motionDevice.PowerTrains)
+            foreach (PowerTrainReport powerTrain in motionDevice.PowerTrains)
             {
-                AddCuratedEquipmentVariables(nodes, "PowerTrains", powerTrain.NodeId, powerTrain.BrowseName);
+                foreach (MotorReport motor in powerTrain.Motors)
+                {
+                    AddCuratedEquipmentVariables(nodes, "PowerTrains", motor.Node.NodeId, $"{motionDevice.Node.BrowseName}.PowerTrains.{powerTrain.Node.BrowseName}.Motors.{motor.Node.BrowseName}", [Opc.Ua.Robotics.BrowseNames.MotorTemperature], parameterSetPath: true);
+                }
             }
         }
 
-        return nodes
-            .GroupBy(node => node.SectionName, StringComparer.Ordinal)
-            .SelectMany(group => group.Take(MaxEquipmentValuesPerSection))
-            .ToArray();
+        return nodes;
     }
 
     private void AddCuratedEquipmentVariables(
         List<SnapshotNode> nodes,
         string sectionName,
         string rootNodeIdText,
-        string rootBrowseName)
+        string rootBrowseName,
+        IReadOnlyCollection<string> variableNames,
+        bool parameterSetPath)
     {
         if (!TryParseNodeId(rootNodeIdText, out NodeId? rootNodeId))
         {
             return;
         }
 
-        foreach (ReferenceDescription variable in FindVariablesByBrowseName(rootNodeId, EquipmentVariableNames, maxDepth: 3)
-                     .Take(MaxEquipmentValuesPerSection))
+        foreach (ReferenceDescription variable in FindVariablesByBrowseName(rootNodeId, variableNames, maxDepth: 3))
         {
-            AddVariable(nodes, sectionName, $"{rootBrowseName}.{variable.BrowseName.Name}", variable, heuristic: true);
+            string label = parameterSetPath
+                ? $"{rootBrowseName}.ParameterSet.{variable.BrowseName.Name}"
+                : $"{rootBrowseName}.{variable.BrowseName.Name}";
+            AddVariable(nodes, sectionName, label, variable, heuristic: true);
         }
     }
 
@@ -249,7 +323,7 @@ public sealed class SnapshotDiscoveryService(Session session)
         var queue = new Queue<(NodeId NodeId, int Depth)>();
         queue.Enqueue((rootNodeId, 0));
 
-        while (queue.Count > 0 && matches.Count < MaxEquipmentValuesPerSection)
+        while (queue.Count > 0)
         {
             (NodeId current, int depth) = queue.Dequeue();
             if (!visited.Add(current) || depth > maxDepth)
@@ -302,12 +376,26 @@ public sealed class SnapshotDiscoveryService(Session session)
             return;
         }
 
-        nodes.Add(new SnapshotNode(
+        nodes.Add(CreateSnapshotNode(sectionName, label, reference, heuristic));
+    }
+
+    private SnapshotNode CreateSnapshotNode(
+        string sectionName,
+        string label,
+        ReferenceDescription reference,
+        bool heuristic = false)
+    {
+        if (_browse.ToNodeId(reference.NodeId) is not { } nodeId)
+        {
+            throw new InvalidOperationException($"Runtime discovery returned an unresolvable NodeId for '{label}'.");
+        }
+
+        return new SnapshotNode(
             sectionName,
             label,
             RoboticsBrowseHelpers.FormatBrowseName(reference.BrowseName),
             nodeId,
-            heuristic));
+            heuristic);
     }
 
     private static IReadOnlyList<SnapshotNode> Deduplicate(IReadOnlyList<SnapshotNode> nodes)
@@ -328,8 +416,12 @@ public sealed class SnapshotDiscoveryService(Session session)
 
     private static bool IsBrowseNameMatch(QualifiedName browseName, IReadOnlyCollection<string> names, ushort roboticsNamespaceIndex)
     {
-        return names.Contains(browseName.Name) &&
-               (browseName.NamespaceIndex == 0 || browseName.NamespaceIndex == roboticsNamespaceIndex);
+        // The curated name is exact and the search is already bounded to a proven
+        // MotionDevice, Axis, Motor, Controller, or state-machine owner. Identity
+        // properties in this repository use the DI namespace, while Robotics
+        // runtime variables use the Robotics namespace, so namespace 3 alone would
+        // incorrectly discard valid DI properties.
+        return names.Contains(browseName.Name, StringComparer.Ordinal);
     }
 
     private ushort GetRoboticsNamespaceIndex()

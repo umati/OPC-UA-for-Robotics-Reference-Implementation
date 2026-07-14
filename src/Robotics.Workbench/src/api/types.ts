@@ -1,1 +1,15 @@
-export type Robot={id:string;displayName:string;endpointUrl:string;enabled:boolean}; export type SnapshotValue={label:string;browseName:string;nodeId:string;statusCode:string;valueText:string;discovery:string;dataType?:string|null;sourceTimestamp?:string|null;serverTimestamp?:string|null}; export type SnapshotSection={name:string;values:SnapshotValue[]}; export type Snapshot={connected:boolean;endpointUrl:string;generatedAtUtc:string;sections:SnapshotSection[];warnings:string[]}; export type Node={browseName:string;displayName:string;nodeId:string;typeDefinition:string;evidence:string}; export type Discovery={connected:boolean;endpointUrl:string;warnings:string[];motionDeviceSystems:any[]}; export type CallResponse={target:string;success:boolean;callStatusCode?:string|null;outputArguments:any[];warnings?:string[]}; export type LiveMessage=Record<string,any>;
+export type Robot={id:string;displayName:string;endpointUrl:string;enabled:boolean;imageUrl?:string};
+export type RobotStatus={robotId:string;displayName:string;endpointUrl:string;connected:boolean;roboticsNamespaceFound:boolean;roboticsNamespaceIndex?:number|null;error?:string|null};
+export type SnapshotValue={label:string;browseName:string;nodeId:string;statusCode:string;valueText:string;discovery:string;dataType?:string|null;sourceTimestamp?:string|null;serverTimestamp?:string|null;engineeringUnits?:string|null;euRange?:string|null;lastGoodValueText?:string;lastGoodSourceTimestamp?:string|null;lastGoodServerTimestamp?:string|null;lastGoodUpdatedAt?:number};
+export type SnapshotSection={name:string;values:SnapshotValue[]};
+export type Snapshot={connected:boolean;endpointUrl:string;generatedAtUtc:string;sections:SnapshotSection[];warnings:string[]};
+export type Node={browseName:string;displayName:string;nodeId:string;typeDefinition:string;evidence:string};
+export type DiscoveryNode={browseName:string;displayName:string;nodeId:string;typeDefinition:string;evidence:string};
+export type DiscoveryMotionDevice={node:DiscoveryNode;axes:DiscoveryNode[];powerTrains:DiscoveryPowerTrain[];axesFolder?:DiscoveryNode|null;powerTrainsFolder?:DiscoveryNode|null};
+export type DiscoveryMotor={node:DiscoveryNode};
+export type DiscoveryPowerTrain={node:DiscoveryNode;motors:DiscoveryMotor[]};
+export type DiscoveryMotionDeviceSystem={node:DiscoveryNode;controllers:any[];motionDevices:DiscoveryMotionDevice[]};
+export type Discovery={connected:boolean;endpointUrl:string;warnings:string[];motionDeviceSystems:DiscoveryMotionDeviceSystem[]};
+export type CallResponse={target:string;success:boolean;callStatusCode?:string|null;outputArguments:any[];warnings?:string[]};
+export type LiveMessage=Record<string,any>;
+export type RobotDiagnostics={robotId:string;displayName:string;endpointUrl:string;generatedAtUtc:string;connected:boolean;roboticsNamespaceFound:boolean;roboticsNamespaceIndex?:number|null;warnings:string[];sections:{name:string;valueCount:number;goodCount:number;nonGoodCount:number;values:{label:string;browseName:string;nodeId:string;statusCode:string;sourceTimestamp?:string|null;serverTimestamp?:string|null}[]}[]};

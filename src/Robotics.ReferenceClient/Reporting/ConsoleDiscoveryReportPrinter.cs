@@ -83,9 +83,13 @@ internal sealed class ConsoleDiscoveryReportPrinter
                     Console.WriteLine("    - unresolved: PowerTrains folder found, but no PowerTrainType children proved");
                 }
 
-                foreach (NodeDiscoveryInfo powerTrain in motionDevice.PowerTrains)
+                foreach (PowerTrainReport powerTrain in motionDevice.PowerTrains)
                 {
-                    PrintNode("    - ", powerTrain);
+                    PrintNode("    - ", powerTrain.Node);
+                    foreach (MotorReport motor in powerTrain.Motors)
+                    {
+                        PrintNode("      motor - ", motor.Node);
+                    }
                 }
             }
         }

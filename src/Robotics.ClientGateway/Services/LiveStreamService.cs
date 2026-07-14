@@ -489,7 +489,9 @@ public sealed class LiveStreamService(
             report.SourceTimestamp,
             report.ServerTimestamp,
             report.Value,
-            report.Heuristic ? "heuristic" : "standard");
+            report.Heuristic ? "heuristic" : "standard",
+            report.EngineeringUnits,
+            report.EURange);
     }
 
     private static bool IsExpectedOpcUaFailure(Exception ex)

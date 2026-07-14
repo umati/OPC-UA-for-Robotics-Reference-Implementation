@@ -145,6 +145,16 @@ public sealed class GatewayOpcUaClient(
         }
     }
 
+    public async Task<(RobotDiagnosticsDto? Diagnostics, ErrorDto? Error, int StatusCode)> GetDiagnosticsAsync(string robotId,string displayName,string endpointUrl,CancellationToken cancellationToken)
+    {
+        DiscoveryDto discovery=await DiscoverAsync(endpointUrl,cancellationToken);
+        SnapshotResult snapshotResult=await GetSnapshotAsync(endpointUrl,SnapshotSelection.All,cancellationToken);
+        if(snapshotResult.Snapshot is null)return (null,snapshotResult.Error,snapshotResult.StatusCode);
+        SnapshotDto snapshot=snapshotResult.Snapshot;
+        var sections=snapshot.Sections.Select(section=>new RobotDiagnosticsSectionDto(section.Name,section.Values.Count,section.Values.Count(v=>v.StatusCode.StartsWith("Good",StringComparison.OrdinalIgnoreCase)),section.Values.Count(v=>!v.StatusCode.StartsWith("Good",StringComparison.OrdinalIgnoreCase)),section.Values.Select(v=>new RobotDiagnosticsValueDto(v.Label,v.BrowseName,v.NodeId,v.StatusCode,v.SourceTimestamp,v.ServerTimestamp)).ToArray())).ToArray();
+        return (new RobotDiagnosticsDto(robotId,displayName,endpointUrl,DateTime.UtcNow,snapshot.Connected&&discovery.Connected,snapshot.RoboticsNamespaceFound&&discovery.RoboticsNamespaceIndex is not null,snapshot.RoboticsNamespaceIndex,discovery.Warnings.Concat(snapshot.Warnings).Distinct(StringComparer.Ordinal).ToArray(),sections),null,HttpStatusCodes.Status200OK);
+    }
+
     public async Task<MethodCallResultDto> CallTaskAsync(
         string methodName,
         MethodCallRequestDto? request,
@@ -424,7 +434,9 @@ public sealed class GatewayOpcUaClient(
             report.SourceTimestamp,
             report.ServerTimestamp,
             report.Value,
-            report.Heuristic ? "heuristic" : "standard");
+            report.Heuristic ? "heuristic" : "standard",
+            report.EngineeringUnits,
+            report.EURange);
     }
 
     private static MethodCallArgumentDto ToDto(MethodInvocationArgumentValue argument)
@@ -474,6 +486,9 @@ public sealed class GatewayOpcUaClient(
             report.Axes.Select(ToDto).ToArray(),
             report.PowerTrains.Select(ToDto).ToArray());
     }
+
+    private static PowerTrainDto ToDto(PowerTrainReport report) =>
+        new(ToDto(report.Node), report.Motors.Select(motor => new MotorDto(ToDto(motor.Node))).ToArray());
 
     private static TaskControlDto ToDto(TaskControlReport report)
     {

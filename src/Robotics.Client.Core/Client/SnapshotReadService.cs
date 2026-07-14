@@ -78,6 +78,7 @@ public sealed class SnapshotReadService(Session session)
                 ? results[0]
                 : new DataValue { StatusCode = new StatusCode(StatusCodes.BadUnexpectedError) };
 
+            (string? engineeringUnits, string? euRange) = ReadAnalogProperties(node.NodeId);
             return new SnapshotValueReport(
                 node.Label,
                 node.BrowseName,
@@ -88,7 +89,9 @@ public sealed class SnapshotReadService(Session session)
                 IsDefaultTimestamp(value.SourceTimestamp) ? null : value.SourceTimestamp,
                 IsDefaultTimestamp(value.ServerTimestamp) ? null : value.ServerTimestamp,
                 StatusCode.IsNotGood(value.StatusCode) ? "<not available>" : FormatValue(value.Value),
-                node.Heuristic);
+                node.Heuristic,
+                engineeringUnits,
+                euRange);
         }
         catch (ServiceResultException ex)
         {
@@ -156,5 +159,58 @@ public sealed class SnapshotReadService(Session session)
     private static string FormatValue(object? value)
     {
         return SafeValueRenderer.Format(value);
+    }
+
+    private (string? EngineeringUnits, string? EURange) ReadAnalogProperties(NodeId nodeId)
+    {
+        var browser = new Browser(session)
+        {
+            BrowseDirection = BrowseDirection.Forward,
+            ReferenceTypeId = ReferenceTypeIds.HasProperty,
+            IncludeSubtypes = true,
+            NodeClassMask = (uint)NodeClass.Variable,
+            ContinueUntilDone = true,
+            ResultMask = (uint)BrowseResultMask.All
+        };
+        ReferenceDescription[] properties = browser.Browse(nodeId).Cast<ReferenceDescription>()
+            .Where(property => property.BrowseName.NamespaceIndex == 0 &&
+                               (property.BrowseName.Name == "EngineeringUnits" || property.BrowseName.Name == "EURange"))
+            .ToArray();
+
+        string? engineeringUnits = null;
+        string? euRange = null;
+        foreach (ReferenceDescription property in properties)
+        {
+            NodeId? propertyNodeId = ExpandedNodeId.ToNodeId(property.NodeId, session.NamespaceUris);
+            if (propertyNodeId is null)
+            {
+                continue;
+            }
+
+            DataValue value = session.ReadValue(propertyNodeId);
+            if (StatusCode.IsNotGood(value.StatusCode))
+            {
+                continue;
+            }
+
+            if (property.BrowseName.Name == "EngineeringUnits")
+            {
+                engineeringUnits = value.Value switch
+                {
+                    EUInformation information => information.DisplayName?.Text,
+                    _ => SafeValueRenderer.Format(value.Value)
+                };
+            }
+            else if (property.BrowseName.Name == "EURange")
+            {
+                euRange = value.Value switch
+                {
+                    Opc.Ua.Range range => $"{range.Low.ToString(System.Globalization.CultureInfo.InvariantCulture)} … {range.High.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
+                    _ => SafeValueRenderer.Format(value.Value)
+                };
+            }
+        }
+
+        return (engineeringUnits, euRange);
     }
 }

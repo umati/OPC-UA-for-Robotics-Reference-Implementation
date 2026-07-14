@@ -25,7 +25,13 @@ public sealed record MotionDeviceReport(
     NodeDiscoveryInfo? AxesFolder,
     NodeDiscoveryInfo? PowerTrainsFolder,
     IReadOnlyList<NodeDiscoveryInfo> Axes,
-    IReadOnlyList<NodeDiscoveryInfo> PowerTrains);
+    IReadOnlyList<PowerTrainReport> PowerTrains);
+
+public sealed record PowerTrainReport(
+    NodeDiscoveryInfo Node,
+    IReadOnlyList<MotorReport> Motors);
+
+public sealed record MotorReport(NodeDiscoveryInfo Node);
 
 public sealed record TaskControlReport(
     NodeDiscoveryInfo Node,

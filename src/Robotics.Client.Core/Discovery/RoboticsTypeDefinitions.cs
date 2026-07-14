@@ -10,6 +10,7 @@ public sealed class RoboticsTypeDefinitions
         NodeId motionDeviceType,
         NodeId axisType,
         NodeId powerTrainType,
+        NodeId motorType,
         NodeId taskControlType,
         NodeId taskControlOperationType,
         NodeId systemOperationType)
@@ -19,6 +20,7 @@ public sealed class RoboticsTypeDefinitions
         MotionDeviceType = motionDeviceType;
         AxisType = axisType;
         PowerTrainType = powerTrainType;
+        MotorType = motorType;
         TaskControlType = taskControlType;
         TaskControlOperationType = taskControlOperationType;
         SystemOperationType = systemOperationType;
@@ -33,6 +35,8 @@ public sealed class RoboticsTypeDefinitions
     public NodeId AxisType { get; }
 
     public NodeId PowerTrainType { get; }
+
+    public NodeId MotorType { get; }
 
     public NodeId TaskControlType { get; }
 
@@ -52,6 +56,7 @@ public sealed class RoboticsTypeDefinitions
             Create(Opc.Ua.Robotics.ObjectTypes.MotionDeviceType, namespaceUris),
             Create(Opc.Ua.Robotics.ObjectTypes.AxisType, namespaceUris),
             Create(Opc.Ua.Robotics.ObjectTypes.PowerTrainType, namespaceUris),
+            Create(Opc.Ua.Robotics.ObjectTypes.MotorType, namespaceUris),
             Create(Opc.Ua.Robotics.ObjectTypes.TaskControlType, namespaceUris),
             Create(Opc.Ua.Robotics.ObjectTypes.TaskControlOperationType, namespaceUris),
             Create(Opc.Ua.Robotics.ObjectTypes.SystemOperationType, namespaceUris));

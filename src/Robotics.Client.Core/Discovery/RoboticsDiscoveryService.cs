@@ -370,9 +370,9 @@ public sealed class RoboticsDiscoveryService(Session session)
             ? []
             : DiscoverTypedChildren(axesFolder, types.AxisType);
 
-        IReadOnlyList<NodeDiscoveryInfo> powerTrains = powerTrainsFolder is null
+        IReadOnlyList<PowerTrainReport> powerTrains = powerTrainsFolder is null
             ? []
-            : DiscoverTypedChildren(powerTrainsFolder, types.PowerTrainType);
+            : DiscoverPowerTrains(powerTrainsFolder, types);
 
         return new MotionDeviceReport(
             _browse.ToNodeInfo(motionDeviceReference),
@@ -380,6 +380,25 @@ public sealed class RoboticsDiscoveryService(Session session)
             powerTrainsFolder is null ? null : _browse.ToNodeInfo(powerTrainsFolder),
             axes,
             powerTrains);
+    }
+
+    private IReadOnlyList<PowerTrainReport> DiscoverPowerTrains(ReferenceDescription folderReference, RoboticsTypeDefinitions types)
+    {
+        return DiscoverTypedChildren(folderReference, types.PowerTrainType)
+            .Select(powerTrain =>
+            {
+                NodeId? powerTrainNodeId = NodeId.Parse(powerTrain.NodeId);
+                IReadOnlyList<MotorReport> motors = _browse.BrowseForward(
+                        powerTrainNodeId,
+                        ReferenceTypeIds.HasComponent,
+                        includeSubtypes: true,
+                        NodeClass.Object)
+                    .Where(reference => _browse.IsTypeDefinitionOrSubtypeOf(_browse.GetTypeDefinition(_browse.ToNodeId(reference.NodeId)!), types.MotorType))
+                    .Select(reference => new MotorReport(_browse.ToNodeInfo(reference)))
+                    .ToArray();
+                return new PowerTrainReport(powerTrain, motors);
+            })
+            .ToArray();
     }
 
     private IReadOnlyList<NodeDiscoveryInfo> DiscoverTypedChildren(ReferenceDescription folderReference, NodeId expectedType)

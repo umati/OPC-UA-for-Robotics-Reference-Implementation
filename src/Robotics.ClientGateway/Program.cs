@@ -126,6 +126,14 @@ app.MapGet("/api/robots/{robotId}/snapshot", async Task<IResult> (
     return result.Snapshot is not null ? Results.Json(result.Snapshot, statusCode: result.StatusCode) : Results.Json(result.Error, statusCode: result.StatusCode);
 });
 
+app.MapGet("/api/robots/{robotId}/diagnostics", async Task<IResult> (string robotId, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken cancellationToken) =>
+{
+    RobotConnectionOptions? robot=registry.FindEnabled(robotId);
+    if(robot is null)return Results.NotFound(new ErrorDto("Robot not found",$"Robot '{robotId}' is unknown or disabled.",robotId));
+    var result=await client.GetDiagnosticsAsync(robot.Id,robot.DisplayName,robot.EndpointUrl,cancellationToken);
+    return result.Diagnostics is not null?Results.Ok(result.Diagnostics):Results.Json(result.Error,statusCode:result.StatusCode);
+});
+
 app.MapGet("/ws/robotics/live", async (
     HttpContext context,
     LiveStreamService liveStreamService,

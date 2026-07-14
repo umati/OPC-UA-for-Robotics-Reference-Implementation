@@ -25,7 +25,13 @@ public sealed record MotionDeviceDto(
     NodeDiscoveryDto? AxesFolder,
     NodeDiscoveryDto? PowerTrainsFolder,
     IReadOnlyList<NodeDiscoveryDto> Axes,
-    IReadOnlyList<NodeDiscoveryDto> PowerTrains);
+    IReadOnlyList<PowerTrainDto> PowerTrains);
+
+public sealed record PowerTrainDto(
+    NodeDiscoveryDto Node,
+    IReadOnlyList<MotorDto> Motors);
+
+public sealed record MotorDto(NodeDiscoveryDto Node);
 
 public sealed record TaskControlDto(
     NodeDiscoveryDto Node,
