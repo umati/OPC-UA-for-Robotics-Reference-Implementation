@@ -215,6 +215,17 @@ app.MapPost("/api/robotics/task/unload-program", async Task<IResult> (
     return ToMethodCallHttpResult(result);
 });
 
+// C15: robot-scoped routing. Invocation remains the shared runtime-derived C9 path.
+app.MapPost("/api/robots/{robotId}/system/get-ready", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, false, Opc.Ua.Robotics.BrowseNames.GetReady));
+app.MapPost("/api/robots/{robotId}/system/start", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, false, Opc.Ua.Robotics.BrowseNames.Start));
+app.MapPost("/api/robots/{robotId}/system/stop", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, false, Opc.Ua.Robotics.BrowseNames.Stop));
+app.MapPost("/api/robots/{robotId}/system/stand-down", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, false, Opc.Ua.Robotics.BrowseNames.StandDown));
+app.MapPost("/api/robots/{robotId}/task/load-by-name", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, true, Opc.Ua.Robotics.BrowseNames.LoadByName));
+app.MapPost("/api/robots/{robotId}/task/start", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, true, Opc.Ua.Robotics.BrowseNames.Start));
+app.MapPost("/api/robots/{robotId}/task/stop", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, true, Opc.Ua.Robotics.BrowseNames.Stop));
+app.MapPost("/api/robots/{robotId}/task/reset-to-program-start", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, true, Opc.Ua.Robotics.BrowseNames.ResetToProgramStart));
+app.MapPost("/api/robots/{robotId}/task/unload-program", (string robotId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request, RobotConnectionRegistry registry, GatewayOpcUaClient client, CancellationToken ct) => RobotCall(robotId, registry, client, request, ct, true, Opc.Ua.Robotics.BrowseNames.UnloadProgram));
+
 app.Run();
 
 static IResult ToMethodCallHttpResult(MethodCallResultDto result)
@@ -222,6 +233,19 @@ static IResult ToMethodCallHttpResult(MethodCallResultDto result)
     return result.Response is not null
         ? Results.Json(result.Response, statusCode: result.StatusCode)
         : Results.Json(result.Error, statusCode: result.StatusCode);
+}
+
+static async Task<IResult> RobotCall(string robotId, RobotConnectionRegistry registry, GatewayOpcUaClient client,
+    MethodCallRequestDto? request, CancellationToken cancellationToken, bool task, string methodName)
+{
+    RobotConnectionOptions? robot = registry.FindEnabled(robotId);
+    if (robot is null)
+        return Results.NotFound(new ErrorDto("Robot not found", $"Robot '{robotId}' is unknown or disabled.", robotId));
+
+    MethodCallResultDto result = task
+        ? await client.CallTaskAsync(robot.EndpointUrl, methodName, request, cancellationToken)
+        : await client.CallSystemAsync(robot.EndpointUrl, methodName, request, cancellationToken);
+    return ToMethodCallHttpResult(result);
 }
 
 static bool TryParseSnapshotSelection(string? selection, out SnapshotSelection parsed)

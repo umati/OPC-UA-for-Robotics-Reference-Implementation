@@ -11,3 +11,5 @@ generated/opcua-di/**/*.bak
 generated/opcua-robotics/**/*.log
 generated/opcua-robotics/**/*.tmp
 generated/opcua-robotics/**/*.bak
+
+*.ps1

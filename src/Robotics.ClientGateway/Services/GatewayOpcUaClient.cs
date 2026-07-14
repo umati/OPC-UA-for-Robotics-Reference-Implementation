@@ -152,11 +152,20 @@ public sealed class GatewayOpcUaClient(
     {
         return await CallOperationMethodAsync(
             MethodInvocationTarget.TaskControlOperation,
+            opcUaOptions.Value.EndpointUrl,
             methodName,
             request,
             GetInputAliases(methodName),
             cancellationToken);
     }
+
+    public Task<MethodCallResultDto> CallTaskAsync(
+        string endpointUrl,
+        string methodName,
+        MethodCallRequestDto? request,
+        CancellationToken cancellationToken) =>
+        CallOperationMethodAsync(MethodInvocationTarget.TaskControlOperation, endpointUrl, methodName, request,
+            GetInputAliases(methodName), cancellationToken);
 
     public async Task<MethodCallResultDto> CallSystemAsync(
         string methodName,
@@ -165,21 +174,29 @@ public sealed class GatewayOpcUaClient(
     {
         return await CallOperationMethodAsync(
             MethodInvocationTarget.SystemOperation,
+            opcUaOptions.Value.EndpointUrl,
             methodName,
             request,
             GetInputAliases(methodName),
             cancellationToken);
     }
 
+    public Task<MethodCallResultDto> CallSystemAsync(
+        string endpointUrl,
+        string methodName,
+        MethodCallRequestDto? request,
+        CancellationToken cancellationToken) =>
+        CallOperationMethodAsync(MethodInvocationTarget.SystemOperation, endpointUrl, methodName, request,
+            GetInputAliases(methodName), cancellationToken);
+
     private async Task<MethodCallResultDto> CallOperationMethodAsync(
         MethodInvocationTarget target,
+        string endpointUrl,
         string methodName,
         MethodCallRequestDto? request,
         IReadOnlyDictionary<string, string> inputAliases,
         CancellationToken cancellationToken)
     {
-        string endpointUrl = opcUaOptions.Value.EndpointUrl;
-
         try
         {
             ApplicationConfiguration configuration = await CreateConfigurationAsync();
