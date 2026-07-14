@@ -23,7 +23,12 @@ public sealed class LiveStreamService(
     private static readonly string[] EquipmentSnapshotSections = ["MotionDevice", "Axes", "PowerTrains"];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task HandleAsync(HttpContext context, CancellationToken cancellationToken)
+    public Task HandleAsync(HttpContext context, CancellationToken cancellationToken) => HandleAsync(context, new RobotConnectionOptions
+    {
+        Id = "default-robot", DisplayName = "Default Robot Server", EndpointUrl = opcUaOptions.Value.EndpointUrl, Enabled = true
+    }, cancellationToken);
+
+    public async Task HandleAsync(HttpContext context, RobotConnectionOptions robot, CancellationToken cancellationToken)
     {
         if (!context.WebSockets.IsWebSocketRequest)
         {
@@ -44,12 +49,12 @@ public sealed class LiveStreamService(
         }
 
         using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-        await StreamAsync(webSocket, options, cancellationToken);
+        await StreamAsync(webSocket, robot, options, cancellationToken);
     }
 
-    private async Task StreamAsync(WebSocket webSocket, LiveStreamOptions options, CancellationToken requestAborted)
+    private async Task StreamAsync(WebSocket webSocket, RobotConnectionOptions robot, LiveStreamOptions options, CancellationToken requestAborted)
     {
-        string endpointUrl = opcUaOptions.Value.EndpointUrl;
+        string endpointUrl = robot.EndpointUrl;
         using var streamCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestAborted);
         Channel<object> outgoing = Channel.CreateUnbounded<object>(new UnboundedChannelOptions
         {
@@ -64,9 +69,11 @@ public sealed class LiveStreamService(
         {
             ApplicationConfiguration configuration = await CreateConfigurationAsync();
             using var session = await new OpcUaSessionFactory(configuration).CreateSessionAsync(endpointUrl, streamCancellation.Token);
+            logger.LogInformation("OPC UA session opened for robot {RobotId} at {EndpointUrl}", robot.Id, endpointUrl);
 
             await outgoing.Writer.WriteAsync(new LiveConnectionMessageDto(
                 "connection",
+                robot.Id, robot.DisplayName,
                 endpointUrl,
                 Connected: true,
                 ToSelectionText(options.Selection),
@@ -81,6 +88,7 @@ public sealed class LiveStreamService(
                 await SendErrorAndCloseAsync(
                     outgoing,
                     streamCancellation,
+                    robot,
                     "Robotics discovery failed.",
                     discoveryReport.Warnings,
                     "discovery failed");
@@ -100,6 +108,7 @@ public sealed class LiveStreamService(
                 await SendErrorAndCloseAsync(
                     outgoing,
                     streamCancellation,
+                    robot,
                     "No live-data nodes were discovered for the requested selection.",
                     null,
                     "no nodes");
@@ -111,6 +120,7 @@ public sealed class LiveStreamService(
                 SnapshotReport snapshotReport = new SnapshotReadService(session).ReadNodes(selectedNodes);
                 await outgoing.Writer.WriteAsync(new LiveSnapshotMessageDto(
                     "snapshot",
+                    robot.Id, robot.DisplayName, endpointUrl,
                     DateTime.UtcNow,
                     snapshotReport.Sections.Select(ToDto).ToArray()), streamCancellation.Token);
             }
@@ -119,20 +129,21 @@ public sealed class LiveStreamService(
                 session,
                 selectedNodes,
                 options,
+                robot,
                 outgoing,
                 streamCancellation.Token);
 
             await receiveTask;
-            await outgoing.Writer.WriteAsync(new LiveClosedMessageDto("closed", "client closed"), CancellationToken.None);
+            await outgoing.Writer.WriteAsync(new LiveClosedMessageDto("closed", robot.Id, robot.DisplayName, "client closed"), CancellationToken.None);
         }
         catch (OperationCanceledException)
         {
-            await TryWriteAsync(outgoing.Writer, new LiveClosedMessageDto("closed", "request cancelled"));
+            await TryWriteAsync(outgoing.Writer, new LiveClosedMessageDto("closed", robot.Id, robot.DisplayName, "request cancelled"));
         }
-        catch (Exception ex) when (IsExpectedOpcUaFailure(ex))
+        catch (Exception ex)
         {
             logger.LogWarning(ex, "Live robotics stream failed for endpoint {EndpointUrl}", endpointUrl);
-            await TryWriteAsync(outgoing.Writer, new LiveErrorMessageDto("error", ToSafeError(ex)));
+            await TryWriteAsync(outgoing.Writer, new LiveErrorMessageDto("error", robot.Id, robot.DisplayName, ToSafeError(ex)));
         }
         finally
         {
@@ -151,6 +162,7 @@ public sealed class LiveStreamService(
         Opc.Ua.Client.Session session,
         IReadOnlyList<SnapshotNode> selectedNodes,
         LiveStreamOptions options,
+        RobotConnectionOptions robot,
         Channel<object> outgoing,
         CancellationToken cancellationToken)
     {
@@ -165,7 +177,7 @@ public sealed class LiveStreamService(
             subscriptionOptions,
             notification =>
             {
-                if (!outgoing.Writer.TryWrite(ToDto(notification)))
+                if (!outgoing.Writer.TryWrite(ToDto(notification, robot)))
                 {
                     logger.LogWarning("Live robotics stream output channel rejected DataChange notification for {Label}", notification.Node.Label);
                 }
@@ -173,9 +185,11 @@ public sealed class LiveStreamService(
             error =>
             {
                 logger.LogWarning("Live robotics stream notification callback failed: {Error}", error);
-                outgoing.Writer.TryWrite(new LiveErrorMessageDto("error", error));
+                outgoing.Writer.TryWrite(new LiveErrorMessageDto("error", robot.Id, robot.DisplayName, error));
             },
             cancellationToken);
+
+        logger.LogInformation("OPC UA subscription created for robot {RobotId} at {EndpointUrl}; requested monitored item count {Count}", robot.Id, robot.EndpointUrl, selectedNodes.Count);
 
         IReadOnlyList<SubscriptionDataChangeItemStatus> failedItems = result.Items
             .Where(item => !item.Created)
@@ -188,6 +202,8 @@ public sealed class LiveStreamService(
         {
             await outgoing.Writer.WriteAsync(new LiveErrorMessageDto(
                 "error",
+                robot.Id,
+                robot.DisplayName,
                 activeItems.Count > 0
                     ? "Some monitored items failed to create."
                     : "All monitored items failed to create.",
@@ -200,18 +216,21 @@ public sealed class LiveStreamService(
             throw new InvalidOperationException("All monitored items failed to create.");
         }
 
+        logger.LogInformation("OPC UA subscription active for robot {RobotId} at {EndpointUrl}; monitored item count {Count}", robot.Id, robot.EndpointUrl, activeItems.Count);
+
         return result.Registration;
     }
 
     private async Task SendErrorAndCloseAsync(
         Channel<object> outgoing,
         CancellationTokenSource streamCancellation,
+        RobotConnectionOptions robot,
         string error,
         IReadOnlyList<string>? details,
         string closeReason)
     {
-        await outgoing.Writer.WriteAsync(new LiveErrorMessageDto("error", error, details), streamCancellation.Token);
-        await outgoing.Writer.WriteAsync(new LiveClosedMessageDto("closed", closeReason), streamCancellation.Token);
+        await outgoing.Writer.WriteAsync(new LiveErrorMessageDto("error", robot.Id, robot.DisplayName, error, details), streamCancellation.Token);
+        await outgoing.Writer.WriteAsync(new LiveClosedMessageDto("closed", robot.Id, robot.DisplayName, closeReason), streamCancellation.Token);
     }
 
     private static async Task ReceiveUntilClosedAsync(WebSocket webSocket, CancellationTokenSource streamCancellation)
@@ -435,10 +454,11 @@ public sealed class LiveStreamService(
         };
     }
 
-    private static LiveDataChangeMessageDto ToDto(CoreDataChangeNotification notification)
+    private static LiveDataChangeMessageDto ToDto(CoreDataChangeNotification notification, RobotConnectionOptions robot)
     {
         return new LiveDataChangeMessageDto(
             "dataChange",
+            robot.Id, robot.DisplayName, robot.EndpointUrl,
             notification.TimestampUtc,
             notification.Node.Label,
             notification.Node.BrowseName,

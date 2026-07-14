@@ -2,6 +2,8 @@ namespace Robotics.ClientGateway.Dtos;
 
 public sealed record LiveConnectionMessageDto(
     string Type,
+    string RobotId,
+    string DisplayName,
     string EndpointUrl,
     bool Connected,
     string Selection,
@@ -12,11 +14,17 @@ public sealed record LiveConnectionMessageDto(
 
 public sealed record LiveSnapshotMessageDto(
     string Type,
+    string RobotId,
+    string DisplayName,
+    string EndpointUrl,
     DateTime GeneratedAtUtc,
     IReadOnlyList<SnapshotSectionDto> Sections);
 
 public sealed record LiveDataChangeMessageDto(
     string Type,
+    string RobotId,
+    string DisplayName,
+    string EndpointUrl,
     DateTime TimestampUtc,
     string Label,
     string BrowseName,
@@ -29,11 +37,15 @@ public sealed record LiveDataChangeMessageDto(
 
 public sealed record LiveErrorMessageDto(
     string Type,
+    string RobotId,
+    string DisplayName,
     string Error,
     IReadOnlyList<string>? Details = null);
 
 public sealed record LiveClosedMessageDto(
     string Type,
+    string RobotId,
+    string DisplayName,
     string Reason);
 
 public sealed record LiveStreamOptions(

@@ -134,6 +134,25 @@ app.MapGet("/ws/robotics/live", async (
     await liveStreamService.HandleAsync(context, cancellationToken);
 });
 
+app.MapGet("/ws/robots/{robotId}/live", async (
+    string robotId,
+    HttpContext context,
+    RobotConnectionRegistry registry,
+    LiveStreamService liveStreamService,
+    CancellationToken cancellationToken) =>
+{
+    RobotConnectionOptions? robot = registry.FindEnabled(robotId);
+    if (robot is null)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsJsonAsync(
+            new ErrorDto("Robot not found", $"Robot '{robotId}' is unknown or disabled.", robotId), cancellationToken);
+        return;
+    }
+
+    await liveStreamService.HandleAsync(context, robot, cancellationToken);
+});
+
 app.MapPost("/api/robotics/system/get-ready", async Task<IResult> (
     [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MethodCallRequestDto? request,
     GatewayOpcUaClient client,
