@@ -87,47 +87,76 @@ jobs:
       - name: Build portable package
         shell: pwsh
         run: |
+          if (Test-Path ".\artifacts") {
+            Remove-Item ".\artifacts" -Recurse -Force
+          }
+
           .\scripts\Publish-PortableWorkbench.ps1 `
             -Version "${{ steps.version.outputs.version }}" `
             -OutputDirectory ".\artifacts" `
             -SourceRevisionId "${{ steps.revision.outputs.revision }}"
 
       - name: Validate generated release files
+        id: release_files
         shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $zipFiles = @(Get-ChildItem `
-            -Path ".\artifacts" `
-            -Filter "*.zip" `
-            -File)
+          $expectedBaseName = "OPC-UA-Robotics-Workbench-$env:VERSION-win-x64"
 
-          $checksumFiles = @(Get-ChildItem `
-            -Path ".\artifacts" `
-            -Filter "*.sha256" `
-            -File)
+          $zipPath = "artifacts/$expectedBaseName.zip"
 
-          if ($zipFiles.Count -ne 1) {
-            throw "Expected exactly one ZIP file, but found $($zipFiles.Count)."
+          $checksumCandidates = @(
+            "artifacts/$expectedBaseName.sha256",
+            "artifacts/$expectedBaseName.zip.sha256"
+          )
+
+          $zipFullPath = Join-Path $env:GITHUB_WORKSPACE $zipPath
+          if (-not (Test-Path -LiteralPath $zipFullPath -PathType Leaf)) {
+            Write-Host "ZIP or checksum files found under artifacts:"
+            Get-ChildItem -LiteralPath ".\artifacts" -File -Recurse -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -like "*.zip" -or $_.Name -like "*.sha256" } |
+              ForEach-Object { Write-Host "  $($_.FullName)" }
+
+            throw "Expected package ZIP was not found: $zipPath"
           }
 
-          if ($checksumFiles.Count -ne 1) {
-            throw "Expected exactly one SHA-256 checksum file, but found $($checksumFiles.Count)."
+          $checksumPath = $checksumCandidates |
+            Where-Object {
+              Test-Path -LiteralPath (Join-Path $env:GITHUB_WORKSPACE $_) -PathType Leaf
+            } |
+            Select-Object -First 1
+
+          if ([string]::IsNullOrWhiteSpace($checksumPath)) {
+            Write-Host "ZIP or checksum files found under artifacts:"
+            Get-ChildItem -LiteralPath ".\artifacts" -File -Recurse -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -like "*.zip" -or $_.Name -like "*.sha256" } |
+              ForEach-Object { Write-Host "  $($_.FullName)" }
+
+            throw "Expected SHA-256 checksum was not found for $expectedBaseName."
           }
 
-          Write-Host "ZIP:"
-          Write-Host $zipFiles[0].FullName
+          Write-Host "Validated release ZIP:"
+          Write-Host "  $zipPath"
 
-          Write-Host "Checksum:"
-          Write-Host $checksumFiles[0].FullName
+          Write-Host "Validated checksum:"
+          Write-Host "  $checksumPath"
+
+          [System.IO.File]::AppendAllText(
+            $env:GITHUB_OUTPUT,
+            "zip_path=$zipPath`nchecksum_path=$checksumPath`nbase_name=$expectedBaseName`n",
+            [System.Text.UTF8Encoding]::new($false)
+          )
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: OPC-UA-Robotics-Workbench-${{ steps.version.outputs.version }}-win-x64
           path: |
-            artifacts/*.zip
-            artifacts/*.sha256
+            ${{ steps.release_files.outputs.zip_path }}
+            ${{ steps.release_files.outputs.checksum_path }}
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 14
 
       - name: Create GitHub prerelease
         if: startsWith(github.ref, 'refs/tags/workbench-v')
@@ -135,22 +164,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
+          ZIP_PATH: ${{ steps.release_files.outputs.zip_path }}
+          CHECKSUM_PATH: ${{ steps.release_files.outputs.checksum_path }}
         run: |
           $tag = "${{ github.ref_name }}"
-          $zip = Get-ChildItem `
-            -Path ".\artifacts" `
-            -Filter "*.zip" `
-            -File |
-            Select-Object -First 1
+          $zip = Join-Path $env:GITHUB_WORKSPACE $env:ZIP_PATH
+          $checksum = Join-Path $env:GITHUB_WORKSPACE $env:CHECKSUM_PATH
 
-          $checksum = Get-ChildItem `
-            -Path ".\artifacts" `
-            -Filter "*.sha256" `
-            -File |
-            Select-Object -First 1
+          if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) {
+            throw "Validated release ZIP was not found: $zip"
+          }
 
-          if ($null -eq $zip -or $null -eq $checksum) {
-            throw "Release artifacts were not found."
+          if (-not (Test-Path -LiteralPath $checksum -PathType Leaf)) {
+            throw "Validated release checksum was not found: $checksum"
           }
 
           $releaseArguments = @(
