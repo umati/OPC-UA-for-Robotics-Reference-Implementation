@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.378.145" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.5.378.145" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.5.378.145" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\generated\opcua-di\**\*.cs" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\generated\opcua-robotics\**\*.cs" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.bsd" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.csv" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.js" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.py" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.ts" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.uanodes" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.xml" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-di\**\*.xsd" Link="Generated\DI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.bsd" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.csv" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.js" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.py" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.ts" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.uanodes" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.xml" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\generated\opcua-robotics\**\*.xsd" Link="Generated\Robotics\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

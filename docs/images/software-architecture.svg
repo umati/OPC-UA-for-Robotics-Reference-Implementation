@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">OPC UA for Robotics software architecture</title>
+  <desc id="desc">A robot server connects to Robotics Client Core over OPC UA, then to the Client Gateway. The Workbench browser connects to the gateway over REST and WebSocket. The Reference Client is a console validation tool using Client Core.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#167c80"/></marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#12304a" flood-opacity=".12"/></filter>
+  </defs>
+  <rect width="1200" height="620" fill="#f7fafc"/>
+  <text x="600" y="54" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#12304a">OPC UA for Robotics software architecture</text>
+  <text x="600" y="84" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#587083">Standards-based robot communication with a browser-friendly gateway</text>
+  <g filter="url(#shadow)" font-family="Segoe UI, Arial, sans-serif">
+    <rect x="55" y="210" width="230" height="120" rx="16" fill="#e5f5f5" stroke="#67b8b7" stroke-width="2"/>
+    <text x="170" y="260" text-anchor="middle" font-size="20" font-weight="600" fill="#12304a">OPC UA Robotics</text><text x="170" y="287" text-anchor="middle" font-size="16" fill="#34576b">Server / Robot</text>
+    <rect x="365" y="210" width="220" height="120" rx="16" fill="#e9f1fb" stroke="#6d9ed0" stroke-width="2"/>
+    <text x="475" y="260" text-anchor="middle" font-size="20" font-weight="600" fill="#12304a">Robotics.Client.Core</text><text x="475" y="287" text-anchor="middle" font-size="15" fill="#34576b">OPC UA communication</text>
+    <rect x="665" y="210" width="220" height="120" rx="16" fill="#e9f1fb" stroke="#6d9ed0" stroke-width="2"/>
+    <text x="775" y="260" text-anchor="middle" font-size="20" font-weight="600" fill="#12304a">Robotics.ClientGateway</text><text x="775" y="287" text-anchor="middle" font-size="15" fill="#34576b">REST + WebSocket APIs</text>
+    <rect x="965" y="210" width="180" height="120" rx="16" fill="#eaf7ef" stroke="#72bd91" stroke-width="2"/>
+    <text x="1055" y="260" text-anchor="middle" font-size="20" font-weight="600" fill="#12304a">Workbench UI</text><text x="1055" y="287" text-anchor="middle" font-size="15" fill="#34576b">Browser</text>
+    <rect x="365" y="445" width="220" height="90" rx="16" fill="#fff6df" stroke="#e2b75e" stroke-width="2"/>
+    <text x="475" y="482" text-anchor="middle" font-size="19" font-weight="600" fill="#12304a">ReferenceClient</text><text x="475" y="509" text-anchor="middle" font-size="15" fill="#34576b">Console validation tool</text>
+  </g>
+  <g fill="none" stroke="#167c80" stroke-width="3" marker-end="url(#arrow)">
+    <path d="M285 270 H365"/><path d="M585 270 H665"/><path d="M885 270 H965"/><path d="M475 445 V330"/>
+  </g>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" fill="#167c80">
+    <text x="325" y="251" text-anchor="middle">opc.tcp / OPC UA</text>
+    <text x="625" y="251" text-anchor="middle">internal client layer</text>
+    <text x="925" y="244" text-anchor="middle">HTTP REST</text>
+    <text x="925" y="266" text-anchor="middle">WebSocket live stream</text>
+    <text x="515" y="398">OPC UA via Core</text>
+  </g>
+  <rect x="930" y="410" width="220" height="76" rx="12" fill="#fff" stroke="#d6e1e8"/>
+  <text x="1040" y="443" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#12304a">Browser boundary</text>
+  <text x="1040" y="466" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#587083">No direct OPC UA connection</text>
+</svg>

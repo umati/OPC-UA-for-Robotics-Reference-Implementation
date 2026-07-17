@@ -1,0 +1,50 @@
+{
+  "ProgramName": "Axis Range Demo",
+  "Description": "Sweeps each simulated joint through representative in-range targets.",
+  "Steps": [
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": -120,
+        "L": -60,
+        "U": 75,
+        "R": -90,
+        "B": 60,
+        "T": -180
+      },
+      "SpeedPercent": 45
+    },
+    {
+      "Type": "Wait",
+      "DurationMs": 400
+    },
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 120,
+        "L": 80,
+        "U": -75,
+        "R": 90,
+        "B": -60,
+        "T": 180
+      },
+      "SpeedPercent": 45
+    },
+    {
+      "Type": "Wait",
+      "DurationMs": 400
+    },
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 0,
+        "L": 0,
+        "U": 0,
+        "R": 0,
+        "B": 0,
+        "T": 0
+      },
+      "SpeedPercent": 65
+    }
+  ]
+}

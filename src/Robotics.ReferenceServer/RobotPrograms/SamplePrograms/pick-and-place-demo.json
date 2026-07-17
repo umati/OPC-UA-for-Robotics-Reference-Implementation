@@ -1,0 +1,94 @@
+{
+  "ProgramName": "Pick and Place Demo",
+  "Description": "Demonstrates joint-space moves with short waits between simulated pick and place positions.",
+  "Steps": [
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 0,
+        "L": -25,
+        "U": 45,
+        "R": 0,
+        "B": 35,
+        "T": 0
+      },
+      "SpeedPercent": 60
+    },
+    {
+      "Type": "Wait",
+      "DurationMs": 500
+    },
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 55,
+        "L": -15,
+        "U": 35,
+        "R": 20,
+        "B": 25,
+        "T": 90
+      },
+      "SpeedPercent": 50
+    },
+    {
+      "Type": "Wait",
+      "DurationMs": 750
+    },
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 0,
+        "L": 0,
+        "U": 0,
+        "R": 0,
+        "B": 0,
+        "T": 0
+      },
+      "SpeedPercent": 70
+    },
+	{
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 0,
+        "L": -25,
+        "U": 45,
+        "R": 0,
+        "B": 35,
+        "T": 0
+      },
+      "SpeedPercent": 60
+    },
+    {
+      "Type": "Wait",
+      "DurationMs": 500
+    },
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 55,
+        "L": -15,
+        "U": 35,
+        "R": 20,
+        "B": 25,
+        "T": 90
+      },
+      "SpeedPercent": 50
+    },
+    {
+      "Type": "Wait",
+      "DurationMs": 750
+    },
+    {
+      "Type": "MoveJoint",
+      "JointTarget": {
+        "S": 0,
+        "L": 0,
+        "U": 0,
+        "R": 0,
+        "B": 0,
+        "T": 0
+      },
+      "SpeedPercent": 70
+    }
+  ]
+}
