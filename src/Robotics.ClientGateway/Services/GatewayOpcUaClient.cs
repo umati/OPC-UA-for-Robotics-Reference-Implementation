@@ -11,7 +11,9 @@ namespace Robotics.ClientGateway.Services;
 
 public sealed class GatewayOpcUaClient(
     IOptions<OpcUaOptions> opcUaOptions,
-    ILogger<GatewayOpcUaClient> logger)
+    ILogger<GatewayOpcUaClient> logger,
+    IWebHostEnvironment environment,
+    IConfiguration configuration)
 {
     private static readonly string[] StateSnapshotSections = ["SystemOperation", "TaskControlOperation"];
     private static readonly string[] EquipmentSnapshotSections = ["MotionDevice", "Axes", "PowerTrains"];
@@ -21,7 +23,7 @@ public sealed class GatewayOpcUaClient(
         return await GetStatusAsync(opcUaOptions.Value.EndpointUrl, cancellationToken);
     }
 
-    public async Task<OpcUaStatusDto> GetStatusAsync(string endpointUrl, CancellationToken cancellationToken)
+    public async Task<OpcUaStatusDto> GetStatusAsync(string endpointUrl, CancellationToken cancellationToken, string robotId = "unknown", string displayName = "unknown")
     {
 
         try
@@ -44,7 +46,7 @@ public sealed class GatewayOpcUaClient(
                 Connected: false,
                 RoboticsNamespaceFound: false,
                 RoboticsNamespaceIndex: null,
-                Error: ToSafeError(ex));
+                Error: ToSafeError(ex, endpointUrl, robotId, displayName));
         }
     }
 
@@ -53,7 +55,7 @@ public sealed class GatewayOpcUaClient(
         return await DiscoverAsync(opcUaOptions.Value.EndpointUrl, cancellationToken);
     }
 
-    public async Task<DiscoveryDto> DiscoverAsync(string endpointUrl, CancellationToken cancellationToken)
+    public async Task<DiscoveryDto> DiscoverAsync(string endpointUrl, CancellationToken cancellationToken, string robotId = "unknown", string displayName = "unknown")
     {
 
         try
@@ -72,7 +74,7 @@ public sealed class GatewayOpcUaClient(
                 endpointUrl,
                 Connected: false,
                 RoboticsNamespaceIndex: null,
-                Warnings: [ToSafeError(ex)],
+                Warnings: [ToSafeError(ex, endpointUrl, robotId, displayName)],
                 MotionDeviceSystems: []);
         }
     }
@@ -82,7 +84,7 @@ public sealed class GatewayOpcUaClient(
         return await GetSnapshotAsync(opcUaOptions.Value.EndpointUrl, selection, cancellationToken);
     }
 
-    public async Task<SnapshotResult> GetSnapshotAsync(string endpointUrl, SnapshotSelection selection, CancellationToken cancellationToken)
+    public async Task<SnapshotResult> GetSnapshotAsync(string endpointUrl, SnapshotSelection selection, CancellationToken cancellationToken, string robotId = "unknown", string displayName = "unknown")
     {
 
         try
@@ -139,7 +141,7 @@ public sealed class GatewayOpcUaClient(
         {
             return Failure(
                 "OPC UA connection failed",
-                ToSafeError(ex),
+                ToSafeError(ex, endpointUrl, robotId, displayName),
                 endpointUrl,
                 HttpStatusCodes.Status502BadGateway);
         }
@@ -147,8 +149,8 @@ public sealed class GatewayOpcUaClient(
 
     public async Task<(RobotDiagnosticsDto? Diagnostics, ErrorDto? Error, int StatusCode)> GetDiagnosticsAsync(string robotId,string displayName,string endpointUrl,CancellationToken cancellationToken)
     {
-        DiscoveryDto discovery=await DiscoverAsync(endpointUrl,cancellationToken);
-        SnapshotResult snapshotResult=await GetSnapshotAsync(endpointUrl,SnapshotSelection.All,cancellationToken);
+        DiscoveryDto discovery=await DiscoverAsync(endpointUrl,cancellationToken,robotId,displayName);
+        SnapshotResult snapshotResult=await GetSnapshotAsync(endpointUrl,SnapshotSelection.All,cancellationToken,robotId,displayName);
         if(snapshotResult.Snapshot is null)return (null,snapshotResult.Error,snapshotResult.StatusCode);
         SnapshotDto snapshot=snapshotResult.Snapshot;
         var sections=snapshot.Sections.Select(section=>new RobotDiagnosticsSectionDto(section.Name,section.Values.Count,section.Values.Count(v=>v.StatusCode.StartsWith("Good",StringComparison.OrdinalIgnoreCase)),section.Values.Count(v=>!v.StatusCode.StartsWith("Good",StringComparison.OrdinalIgnoreCase)),section.Values.Select(v=>new RobotDiagnosticsValueDto(v.Label,v.BrowseName,v.NodeId,v.StatusCode,v.SourceTimestamp,v.ServerTimestamp)).ToArray())).ToArray();
@@ -285,31 +287,56 @@ public sealed class GatewayOpcUaClient(
             applicationName: "Robotics.ClientGateway",
             applicationUriSuffix: "RoboticsClientGateway",
             productUri: "urn:RoboticsReferenceImplementation:ClientGateway",
-            pkiRootPath: "pki/client-gateway",
-            traceOutputPath: "Logs/RoboticsClientGateway.log",
+            pkiRootPath: Path.Combine(ResolvePackageRoot(), environment.IsProduction() ? "certificates" : "pki/client-gateway"),
+            traceOutputPath: Path.Combine(ResolvePackageRoot(), environment.IsProduction() ? "logs" : "Logs", "RoboticsClientGateway.opcua.log"),
             developmentCertificateAccepted: subject =>
             {
                 logger.LogWarning(
                     "Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: {Subject}",
                     subject);
-            });
+            },
+            autoAcceptUntrustedCertificates: opcUaOptions.Value.AutoAcceptUntrustedCertificates,
+            applicationCertificateDirectory: environment.IsProduction() ? "application" : "own");
 
         return await application.CreateConfigurationAsync();
     }
+
+    private string ResolvePackageRoot() =>
+        Path.GetFullPath(configuration["PackageRoot"] ?? Environment.GetEnvironmentVariable("OPCUA_ROBOTICS_WORKBENCH_ROOT") ?? AppContext.BaseDirectory);
 
     private static bool IsExpectedOpcUaFailure(Exception ex)
     {
         return ex is ServiceResultException or System.Net.Sockets.SocketException or InvalidOperationException;
     }
 
-    private static string ToSafeError(Exception ex)
+    private string ToSafeError(Exception ex, string endpointUrl = "unknown", string robotId = "unknown", string displayName = "unknown")
     {
-        if (ex is ServiceResultException serviceResultException)
+        if (HasBadCertificateUntrusted(ex))
         {
-            return serviceResultException.StatusCode.ToString();
+            string certificateRoot = Path.GetFullPath(Path.Combine(ResolvePackageRoot(),
+                environment.IsProduction() ? "certificates" : "pki/client-gateway"));
+            string rejected = Path.Combine(certificateRoot, "rejected");
+            string trusted = Path.Combine(certificateRoot, "trusted");
+            return $"BadCertificateUntrusted for robotId '{robotId}' ({displayName}) at endpointUrl '{endpointUrl}'. " +
+                   $"The public server certificate was written to the rejected certificate folder: '{rejected}'. " +
+                   $"Review that certificate, then place only the public certificate file in the trusted certificate folder: '{trusted}'. " +
+                   "Restart the Workbench or retry the connection afterward.";
         }
 
         return ex.Message;
+    }
+
+    private static bool HasBadCertificateUntrusted(Exception exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is ServiceResultException serviceResultException &&
+                serviceResultException.StatusCode == Opc.Ua.StatusCodes.BadCertificateUntrusted)
+                return true;
+            if (current.Message.Contains("BadCertificateUntrusted", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     private static SnapshotResult Failure(string error, string details, string endpointUrl, int statusCode)

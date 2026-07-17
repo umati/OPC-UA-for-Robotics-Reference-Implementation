@@ -17,7 +17,9 @@ namespace Robotics.ClientGateway.Services;
 
 public sealed class LiveStreamService(
     IOptions<OpcUaOptions> opcUaOptions,
-    ILogger<LiveStreamService> logger)
+    ILogger<LiveStreamService> logger,
+    IWebHostEnvironment environment,
+    IConfiguration configuration)
 {
     private static readonly string[] StateSnapshotSections = ["SystemOperation", "TaskControlOperation"];
     private static readonly string[] EquipmentSnapshotSections = ["MotionDevice", "Axes", "PowerTrains"];
@@ -303,17 +305,22 @@ public sealed class LiveStreamService(
             applicationName: "Robotics.ClientGateway",
             applicationUriSuffix: "RoboticsClientGateway",
             productUri: "urn:RoboticsReferenceImplementation:ClientGateway",
-            pkiRootPath: "pki/client-gateway",
-            traceOutputPath: "Logs/RoboticsClientGateway.log",
+            pkiRootPath: Path.Combine(ResolvePackageRoot(), environment.IsProduction() ? "certificates" : "pki/client-gateway"),
+            traceOutputPath: Path.Combine(ResolvePackageRoot(), environment.IsProduction() ? "logs" : "Logs", "RoboticsClientGateway.opcua.log"),
             developmentCertificateAccepted: subject =>
             {
                 logger.LogWarning(
                     "Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: {Subject}",
                     subject);
-            });
+            },
+            autoAcceptUntrustedCertificates: opcUaOptions.Value.AutoAcceptUntrustedCertificates,
+            applicationCertificateDirectory: environment.IsProduction() ? "application" : "own");
 
         return await application.CreateConfigurationAsync();
     }
+
+    private string ResolvePackageRoot() =>
+        Path.GetFullPath(configuration["PackageRoot"] ?? Environment.GetEnvironmentVariable("OPCUA_ROBOTICS_WORKBENCH_ROOT") ?? AppContext.BaseDirectory);
 
     private static bool TryParseOptions(IQueryCollection query, out LiveStreamOptions options, out string? error)
     {

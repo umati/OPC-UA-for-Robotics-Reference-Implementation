@@ -13,3 +13,4 @@ generated/opcua-robotics/**/*.tmp
 generated/opcua-robotics/**/*.bak
 
 *.ps1
+!scripts/*.ps1

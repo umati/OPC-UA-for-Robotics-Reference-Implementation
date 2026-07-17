@@ -13,6 +13,8 @@ public sealed class OpcUaClientApplication
     private readonly string _pkiRootPath;
     private readonly string _traceOutputPath;
     private readonly Action<string>? _developmentCertificateAccepted;
+    private readonly bool _autoAcceptUntrustedCertificates;
+    private readonly string _applicationCertificateDirectory;
 
     public OpcUaClientApplication(
         string applicationName = ApplicationName,
@@ -20,7 +22,9 @@ public sealed class OpcUaClientApplication
         string productUri = "urn:RoboticsReferenceImplementation:ReferenceClient",
         string pkiRootPath = "pki/reference-client",
         string traceOutputPath = "Logs/RoboticsReferenceClient.log",
-        Action<string>? developmentCertificateAccepted = null)
+        Action<string>? developmentCertificateAccepted = null,
+        bool autoAcceptUntrustedCertificates = true,
+        string applicationCertificateDirectory = "own")
     {
         _applicationName = applicationName;
         _applicationUriSuffix = applicationUriSuffix;
@@ -28,6 +32,8 @@ public sealed class OpcUaClientApplication
         _pkiRootPath = pkiRootPath;
         _traceOutputPath = traceOutputPath;
         _developmentCertificateAccepted = developmentCertificateAccepted;
+        _autoAcceptUntrustedCertificates = autoAcceptUntrustedCertificates;
+        _applicationCertificateDirectory = applicationCertificateDirectory;
     }
 
     public async Task<ApplicationConfiguration> CreateConfigurationAsync()
@@ -44,7 +50,7 @@ public sealed class OpcUaClientApplication
                 ApplicationCertificate = new CertificateIdentifier
                 {
                     StoreType = CertificateStoreType.Directory,
-                    StorePath = $"{_pkiRootPath}/own",
+                    StorePath = Path.Combine(_pkiRootPath, _applicationCertificateDirectory),
                     SubjectName = $"CN={_applicationName}"
                 },
 
@@ -67,7 +73,7 @@ public sealed class OpcUaClientApplication
                 },
 
                 AddAppCertToTrustedStore = true,
-                AutoAcceptUntrustedCertificates = true,
+                AutoAcceptUntrustedCertificates = _autoAcceptUntrustedCertificates,
                 RejectSHA1SignedCertificates = false,
                 MinimumCertificateKeySize = 2048
             },
@@ -106,14 +112,17 @@ public sealed class OpcUaClientApplication
         // Implementation decision for local C1 development: match the reference server's repo-local PKI style
         // while making server certificate auto-accept explicit and noisy. Production clients should replace this
         // with pinned trust-store provisioning.
-        configuration.CertificateValidator.CertificateValidation += (_, eventArgs) =>
+        if (_autoAcceptUntrustedCertificates)
         {
-            if (eventArgs.Error.StatusCode == StatusCodes.BadCertificateUntrusted)
+            configuration.CertificateValidator.CertificateValidation += (_, eventArgs) =>
             {
-                _developmentCertificateAccepted?.Invoke(eventArgs.Certificate.Subject);
-                eventArgs.Accept = true;
-            }
-        };
+                if (eventArgs.Error.StatusCode == StatusCodes.BadCertificateUntrusted)
+                {
+                    _developmentCertificateAccepted?.Invoke(eventArgs.Certificate.Subject);
+                    eventArgs.Accept = true;
+                }
+            };
+        }
 
         var application = new ApplicationInstance
         {

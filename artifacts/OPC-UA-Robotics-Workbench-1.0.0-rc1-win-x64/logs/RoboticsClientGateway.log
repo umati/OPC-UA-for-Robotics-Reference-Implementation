@@ -1,0 +1,282 @@
+2026-07-17T13:10:50.9000837+02:00 [Information] Microsoft.Hosting.Lifetime: Now listening on: http://localhost:5080
+2026-07-17T13:10:50.9100331+02:00 [Information] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2026-07-17T13:10:50.9884222+02:00 [Information] Microsoft.Hosting.Lifetime: Hosting environment: Production
+2026-07-17T13:10:51.0515774+02:00 [Information] Microsoft.Hosting.Lifetime: Content root path: C:\Work\OPC Robotics Reference Implementation\OPC-UA-for-Robotics-Reference-Implementation\artifacts\OPC-UA-Robotics-Workbench-1.0.0-rc1-win-x64
+2026-07-17T13:10:51.1130323+02:00 [Information] Robotics.ClientGateway: OPC UA Robotics Workbench Version: 1.0.0-rc1; Revision: c18a-uncommitted; InformationalVersion: 1.0.0-rc1. Configuration: C:\Work\OPC Robotics Reference Implementation\OPC-UA-for-Robotics-Reference-Implementation\artifacts\OPC-UA-Robotics-Workbench-1.0.0-rc1-win-x64\robots.json
+2026-07-17T13:10:51.1766804+02:00 [Information] Robotics.ClientGateway: Enabled robots: my-robot (opc.tcp://localhost:4840/RoboticsReferenceServer)
+2026-07-17T13:10:51.2328825+02:00 [Information] Robotics.ClientGateway: Workbench: http://localhost:5080; Logs: C:\Work\OPC Robotics Reference Implementation\OPC-UA-for-Robotics-Reference-Implementation\artifacts\OPC-UA-Robotics-Workbench-1.0.0-rc1-win-x64\logs; Certificates: C:\Work\OPC Robotics Reference Implementation\OPC-UA-for-Robotics-Reference-Implementation\artifacts\OPC-UA-Robotics-Workbench-1.0.0-rc1-win-x64\certificates
+2026-07-17T13:11:01.2391399+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/ - - -
+2026-07-17T13:11:01.7351575+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'Fallback {*path:nonfile}'
+2026-07-17T13:11:01.8119842+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'Fallback {*path:nonfile}'
+2026-07-17T13:11:01.8832744+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/ - 200 - - 644.9594ms
+2026-07-17T13:11:02.4159877+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/assets/index-CvzFyw65.js - - -
+2026-07-17T13:11:02.4182289+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/assets/index-VpuRavc1.css - - -
+2026-07-17T13:11:02.5435159+02:00 [Information] Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware: Sending file. Request path: '/assets/index-CvzFyw65.js'. Physical path: 'C:\Work\OPC Robotics Reference Implementation\OPC-UA-for-Robotics-Reference-Implementation\artifacts\OPC-UA-Robotics-Workbench-1.0.0-rc1-win-x64\app\wwwroot\assets\index-CvzFyw65.js'
+2026-07-17T13:11:02.6274679+02:00 [Information] Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware: Sending file. Request path: '/assets/index-VpuRavc1.css'. Physical path: 'C:\Work\OPC Robotics Reference Implementation\OPC-UA-for-Robotics-Reference-Implementation\artifacts\OPC-UA-Robotics-Workbench-1.0.0-rc1-win-x64\app\wwwroot\assets\index-VpuRavc1.css'
+2026-07-17T13:11:02.6893469+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/assets/index-CvzFyw65.js - 200 223638 text/javascript 211.6103ms
+2026-07-17T13:11:02.7441274+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/assets/index-VpuRavc1.css - 200 23135 text/css 273.5516ms
+2026-07-17T13:11:02.8406889+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/metadata - application/json -
+2026-07-17T13:11:02.9119187+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/favicon.svg - - -
+2026-07-17T13:11:02.9881213+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots - application/json -
+2026-07-17T13:11:03.0808109+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/metadata'
+2026-07-17T13:11:03.1616553+02:00 [Information] Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware: Sending file. Request path: '/favicon.svg'. Physical path: 'C:\Work\OPC Robotics Reference Implementation\OPC-UA-for-Robotics-Reference-Implementation\artifacts\OPC-UA-Robotics-Workbench-1.0.0-rc1-win-x64\app\wwwroot\favicon.svg'
+2026-07-17T13:11:03.2236449+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots'
+2026-07-17T13:11:03.2853363+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:11:03.2866468+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/favicon.svg - 200 244 image/svg+xml 410.8952ms
+2026-07-17T13:11:03.3564900+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:11:03.3579634+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type '<>f__AnonymousType1`5' as Json.
+2026-07-17T13:11:03.4168885+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotConnectionDto[]' as Json.
+2026-07-17T13:11:03.4693526+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/metadata'
+2026-07-17T13:11:03.5215116+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots'
+2026-07-17T13:11:03.5744230+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/metadata - 200 - application/json;+charset=utf-8 779.4188ms
+2026-07-17T13:11:03.6228464+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots - 200 - application/json;+charset=utf-8 733.8999ms
+2026-07-17T13:11:03.6790664+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - application/json -
+2026-07-17T13:11:03.7336239+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - application/json -
+2026-07-17T13:11:03.7983093+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - application/json -
+2026-07-17T13:11:03.8661349+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - application/json -
+2026-07-17T13:11:03.9218997+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/ws/robots/my-robot/live?selection=all&sendInitialSnapshot=true - - -
+2026-07-17T13:11:03.9231491+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - application/json -
+2026-07-17T13:11:04.0010023+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:11:04.0560375+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:11:04.0943434+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:11:04.1284405+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:11:04.1621757+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /ws/robots/{robotId}/live'
+2026-07-17T13:11:04.1979356+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:11:05.2638784+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.2649079+02:00 [Warning] Robotics.ClientGateway.Services.LiveStreamService: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.3162407+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.3666023+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.4175680+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.4719194+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.4733508+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.5262690+02:00 [Warning] Robotics.ClientGateway.Services.LiveStreamService: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.5720302+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.6158168+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.6672404+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:05.7202465+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:06.0122122+02:00 [Information] Robotics.ClientGateway.Services.LiveStreamService: OPC UA session opened for robot my-robot at opc.tcp://localhost:4840/RoboticsReferenceServer
+2026-07-17T13:11:06.0497658+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:11:06.0978584+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotStatusDto' as Json.
+2026-07-17T13:11:06.1408727+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:11:06.1817990+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - 200 - application/json;+charset=utf-8 2502.3102ms
+2026-07-17T13:11:07.8524541+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:11:07.8789939+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'DiscoveryDto' as Json.
+2026-07-17T13:11:07.9607173+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:11:08.0234302+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - 200 - application/json;+charset=utf-8 4399.9260ms
+2026-07-17T13:11:08.1015152+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:08.1535903+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:11:09.0739906+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:11:09.0940115+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:11:09.1590571+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:11:09.1607404+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - 200 - application/json;+charset=utf-8 5550.5032ms
+2026-07-17T13:11:09.2161461+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:11:09.2782716+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:11:09.3395387+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:11:09.3407121+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - 200 - application/json;+charset=utf-8 5726.0993ms
+2026-07-17T13:11:09.8615387+02:00 [Information] Robotics.ClientGateway.Services.LiveStreamService: OPC UA subscription created for robot my-robot at opc.tcp://localhost:4840/RoboticsReferenceServer; requested monitored item count 92
+2026-07-17T13:11:09.8642762+02:00 [Information] Robotics.ClientGateway.Services.LiveStreamService: OPC UA subscription active for robot my-robot at opc.tcp://localhost:4840/RoboticsReferenceServer; monitored item count 92
+2026-07-17T13:11:10.8938691+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:11:10.8973727+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotDiagnosticsDto' as Json.
+2026-07-17T13:11:10.9750183+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:11:11.0360402+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - 200 - application/json;+charset=utf-8 7425.2536ms
+2026-07-17T13:12:01.9062303+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/load-by-name - application/json 33
+2026-07-17T13:12:01.9088882+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: POST /api/robots/{robotId}/task/load-by-name'
+2026-07-17T13:12:02.0417413+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:02.0792832+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:03.2420252+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:12:03.2525684+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'MethodCallResponseDto' as Json.
+2026-07-17T13:12:03.3137026+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: POST /api/robots/{robotId}/task/load-by-name'
+2026-07-17T13:12:03.3507136+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/load-by-name - 200 - application/json;+charset=utf-8 1444.4134ms
+2026-07-17T13:12:03.3922692+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - application/json -
+2026-07-17T13:12:03.4384309+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - application/json -
+2026-07-17T13:12:03.4739342+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - application/json -
+2026-07-17T13:12:03.5161554+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - application/json -
+2026-07-17T13:12:03.5561522+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - application/json -
+2026-07-17T13:12:03.5964869+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:12:03.6293285+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:03.6718176+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:03.7044022+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:12:03.7398233+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:12:03.7750859+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:03.8073191+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:03.8366553+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:03.8757146+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:03.9094658+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:03.9494683+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:03.9917629+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:04.0334532+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:04.0624090+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:04.0935876+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:04.1645423+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:12:04.1901391+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotStatusDto' as Json.
+2026-07-17T13:12:04.2166270+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:12:04.2420836+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - 200 - application/json;+charset=utf-8 849.2454ms
+2026-07-17T13:12:04.8564712+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:12:04.9135881+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'DiscoveryDto' as Json.
+2026-07-17T13:12:04.9666279+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:12:05.0117165+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - 200 - application/json;+charset=utf-8 1653.7597ms
+2026-07-17T13:12:05.1911031+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:05.2447502+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:06.5900839+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:12:06.5919539+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:12:06.6427729+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:12:06.7033189+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:06.7582713+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:12:06.8166339+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - 200 - application/json;+charset=utf-8 3399.8677ms
+2026-07-17T13:12:06.8847067+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:06.9348086+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - 200 - application/json;+charset=utf-8 3576.6197ms
+2026-07-17T13:12:08.0655727+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:12:08.0671166+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotDiagnosticsDto' as Json.
+2026-07-17T13:12:08.1107132+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:12:08.1579253+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - 200 - application/json;+charset=utf-8 4797.5836ms
+2026-07-17T13:12:08.7620580+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/start - application/json 2
+2026-07-17T13:12:08.8138663+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: POST /api/robots/{robotId}/task/start'
+2026-07-17T13:12:08.9702094+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:09.0316631+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:09.9433493+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:12:09.9880820+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'MethodCallResponseDto' as Json.
+2026-07-17T13:12:10.0291413+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: POST /api/robots/{robotId}/task/start'
+2026-07-17T13:12:10.0770224+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/start - 200 - application/json;+charset=utf-8 1314.9361ms
+2026-07-17T13:12:10.1231798+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - application/json -
+2026-07-17T13:12:10.1666521+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - application/json -
+2026-07-17T13:12:10.2166350+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - application/json -
+2026-07-17T13:12:10.2621946+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - application/json -
+2026-07-17T13:12:10.3110168+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - application/json -
+2026-07-17T13:12:10.3125838+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:12:10.3665772+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:10.4324054+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:10.4914213+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:12:10.5502852+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:12:10.6152641+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:10.6901882+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:10.7550733+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:10.8244775+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:10.8895775+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:10.9478159+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:11.0106564+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:11.0758428+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:11.1376010+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:11.1947154+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:11.3170235+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:12:11.3837868+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotStatusDto' as Json.
+2026-07-17T13:12:11.4427363+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:12:11.5009576+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - 200 - application/json;+charset=utf-8 1377.5232ms
+2026-07-17T13:12:12.9744694+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:12:12.9765400+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'DiscoveryDto' as Json.
+2026-07-17T13:12:13.0436807+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:12:13.1046072+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - 200 - application/json;+charset=utf-8 3021.8999ms
+2026-07-17T13:12:13.5192020+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:13.5827361+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:12:14.2833265+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:12:14.2851914+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:12:14.3514025+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:14.4057696+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - 200 - application/json;+charset=utf-8 4322.6650ms
+2026-07-17T13:12:14.4596689+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:12:14.5147508+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:12:14.5653806+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:12:14.6184389+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - 200 - application/json;+charset=utf-8 4535.1971ms
+2026-07-17T13:12:15.7365334+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:12:15.7386040+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotDiagnosticsDto' as Json.
+2026-07-17T13:12:15.7918582+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:12:15.8418822+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - 200 - application/json;+charset=utf-8 5757.1322ms
+2026-07-17T13:15:08.3007675+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/load-by-name - application/json 37
+2026-07-17T13:15:08.3154138+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: POST /api/robots/{robotId}/task/load-by-name'
+2026-07-17T13:15:08.5188099+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:08.5913462+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:09.5810687+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:15:09.5828758+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'MethodCallResponseDto' as Json.
+2026-07-17T13:15:09.6423804+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: POST /api/robots/{robotId}/task/load-by-name'
+2026-07-17T13:15:09.6893379+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/load-by-name - 200 - application/json;+charset=utf-8 1388.5638ms
+2026-07-17T13:15:09.7360648+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - application/json -
+2026-07-17T13:15:09.7906312+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:15:09.8733273+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - application/json -
+2026-07-17T13:15:09.9528806+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - application/json -
+2026-07-17T13:15:10.0057849+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - application/json -
+2026-07-17T13:15:10.1114448+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - application/json -
+2026-07-17T13:15:10.1816763+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:15:10.2520646+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:10.3434986+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.4513987+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:15:10.5028326+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:10.5703813+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.6695174+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.7176187+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.7626125+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.8159429+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.8577503+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.9012096+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.9495014+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:10.9999181+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:11.0451420+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:15:11.0968871+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotStatusDto' as Json.
+2026-07-17T13:15:11.1820475+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:15:11.2517210+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - 200 - application/json;+charset=utf-8 1515.4643ms
+2026-07-17T13:15:12.3563032+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:15:12.3579144+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'DiscoveryDto' as Json.
+2026-07-17T13:15:12.4027012+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:15:12.4042803+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - 200 - application/json;+charset=utf-8 2705.1622ms
+2026-07-17T13:15:12.6895372+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:12.7424969+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:13.6347884+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:15:13.6371431+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:15:13.6868994+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:15:13.7405978+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:13.7883695+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:15:13.8350979+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - 200 - application/json;+charset=utf-8 4084.9173ms
+2026-07-17T13:15:13.8781069+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:13.9314307+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - 200 - application/json;+charset=utf-8 4232.4575ms
+2026-07-17T13:15:15.5685166+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:15:15.5753858+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotDiagnosticsDto' as Json.
+2026-07-17T13:15:15.6640546+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:15:15.7402125+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - 200 - application/json;+charset=utf-8 6037.2541ms
+2026-07-17T13:15:17.5744967+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/start - application/json 2
+2026-07-17T13:15:17.5783450+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: POST /api/robots/{robotId}/task/start'
+2026-07-17T13:15:17.9002341+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:18.0192757+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:20.1148162+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:15:20.1163515+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'MethodCallResponseDto' as Json.
+2026-07-17T13:15:20.1634833+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: POST /api/robots/{robotId}/task/start'
+2026-07-17T13:15:20.2289720+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 POST http://localhost:5080/api/robots/my-robot/task/start - 200 - application/json;+charset=utf-8 2654.4792ms
+2026-07-17T13:15:20.2378920+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - application/json -
+2026-07-17T13:15:20.3112494+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - application/json -
+2026-07-17T13:15:20.3127752+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - application/json -
+2026-07-17T13:15:20.3585682+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:20.4296161+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - application/json -
+2026-07-17T13:15:20.4765538+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:15:20.5291848+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:15:20.5826252+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request starting HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - application/json -
+2026-07-17T13:15:20.6289417+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:15:20.6817079+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:20.7360214+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executing endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:20.7804451+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:20.8195372+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:20.8620570+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:20.9193197+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:20.9875111+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:21.0525085+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:21.1240707+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:21.1860879+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:21.2392316+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:15:21.2882633+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotStatusDto' as Json.
+2026-07-17T13:15:21.3375391+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:21.3848869+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/status'
+2026-07-17T13:15:21.4310873+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/status - 200 - application/json;+charset=utf-8 1193.1260ms
+2026-07-17T13:15:22.4446548+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:15:22.5101925+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'DiscoveryDto' as Json.
+2026-07-17T13:15:22.5581941+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/discovery'
+2026-07-17T13:15:22.6066936+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/discovery - 200 - application/json;+charset=utf-8 2365.7741ms
+2026-07-17T13:15:22.6734217+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:22.7262557+02:00 [Warning] Robotics.ClientGateway.Services.GatewayOpcUaClient: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation
+2026-07-17T13:15:23.4474572+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:15:23.5129764+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:15:23.5829161+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:23.6575321+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=states - 200 - application/json;+charset=utf-8 3416.4064ms
+2026-07-17T13:15:23.9828727+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Setting HTTP status code 200.
+2026-07-17T13:15:23.9850866+02:00 [Information] Microsoft.AspNetCore.Http.Result.JsonResult: Writing value of type 'SnapshotDto' as Json.
+2026-07-17T13:15:24.0826204+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/snapshot'
+2026-07-17T13:15:24.1562126+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/snapshot?selection=equipment - 200 - application/json;+charset=utf-8 3914.7564ms
+2026-07-17T13:15:26.1573185+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Setting HTTP status code 200.
+2026-07-17T13:15:26.1601659+02:00 [Information] Microsoft.AspNetCore.Http.Result.OkObjectResult: Writing value of type 'RobotDiagnosticsDto' as Json.
+2026-07-17T13:15:26.2651975+02:00 [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware: Executed endpoint 'HTTP: GET /api/robots/{robotId}/diagnostics'
+2026-07-17T13:15:26.2703562+02:00 [Information] Microsoft.AspNetCore.Hosting.Diagnostics: Request finished HTTP/1.1 GET http://localhost:5080/api/robots/my-robot/diagnostics - 200 - application/json;+charset=utf-8 6028.4188ms
+2026-07-17T13:57:09.0404919+02:00 [Warning] Robotics.ClientGateway.Services.LiveStreamService: Development certificate policy: auto-accepting untrusted server certificate. Certificate subject: CN=Robotics Reference Server, O=OPC Foundation

@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using Robotics.ClientGateway.Dtos;
 using Robotics.ClientGateway.Options;
@@ -22,10 +21,7 @@ public sealed class RobotConnectionRegistry(
     private static IReadOnlyList<RobotConnectionOptions> BuildRobots(OpcUaOptions opcUa, IConfiguration configuration)
     {
         var configured = configuration.GetSection("Robots").Get<RobotConnectionOptions[]>() ?? [];
-        if (configured.Length > 0)
-        {
-            return configured.Where(IsValid).ToArray();
-        }
+        if (configured.Length > 0) return configured;
 
         return [new RobotConnectionOptions
         {
@@ -35,11 +31,6 @@ public sealed class RobotConnectionRegistry(
             Enabled = true
         }];
     }
-
-    private static bool IsValid(RobotConnectionOptions robot) =>
-        Regex.IsMatch(robot.Id ?? string.Empty, "^[A-Za-z0-9][A-Za-z0-9._~-]*$") &&
-        !string.IsNullOrWhiteSpace(robot.DisplayName) &&
-        Uri.TryCreate(robot.EndpointUrl, UriKind.Absolute, out _);
 
     private static RobotConnectionDto ToDto(RobotConnectionOptions robot) =>
         new(robot.Id, robot.DisplayName, robot.EndpointUrl, robot.Enabled);

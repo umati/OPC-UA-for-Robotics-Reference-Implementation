@@ -1,256 +1,99 @@
-# OPC UA for Robotics Reference Implementation
+# OPC UA Robotics Reference Implementation
 
-![OPC UA Robotics Demonstration Architecture](docs/images/opc-ua-robotics-demo.png)
-
-This repository is a standards-focused reference implementation and demonstration environment for OPC UA for Robotics. It demonstrates how browser-based robotics workbench software can interact with simulated or real robot systems through OPC UA Robotics, without vendor-specific robot APIs.
-
-## Why this project exists
-
-The project provides a practical, vendor-independent path for robot communication:
-
-- Standards-based discovery, state reading, method calls, and live updates.
-- Support for simulated systems, with a path toward real robot systems.
-- A useful validation environment for tradeshow demonstrations and vendor interoperability testing.
-- No vendor-specific SDK in the browser; the browser communicates with the gateway.
-
-## Software architecture
-
-![Software Architecture](docs/images/software-architecture.svg)
-
-The robot or reference server exposes OPC UA Robotics. `Robotics.Client.Core` performs OPC UA communication, `Robotics.ClientGateway` exposes HTTP and WebSocket APIs, and `Robotics.Workbench` runs in the browser. `Robotics.ReferenceClient` is a console validation tool that also uses `Robotics.Client.Core`. The browser is not the OPC UA client.
-
-## What this project contains
-
-- `Robotics.ReferenceServer` — simulated OPC UA Robotics reference server.
-- `Robotics.ReferenceClient` — console validation client.
-- `Robotics.Client.Core` — OPC UA session, discovery, snapshots, and call behavior.
-- `Robotics.ClientGateway` — REST and WebSocket gateway APIs.
-- `Robotics.Workbench` — browser-based responsive workbench UI.
-- `generated/opcua-robotics` — generated OPC UA Robotics model code and related artifacts.
-- `docs/images` — demonstration and architecture visuals.
+This repository contains a reference OPC UA Robotics server, the shared `Robotics.Client.Core` client layer, the ASP.NET Core `Robotics.ClientGateway`, and the React/TypeScript `Robotics.Workbench`.
 
 ## Current capabilities
 
-- Simulated OPC UA Robotics reference server.
-- `MotionDeviceSystem`, `Controller`, `MotionDevice`, `Axes`, and `PowerTrains`.
-- `SystemOperation` and `TaskControlOperation`.
-- Runtime discovery and method metadata discovery.
-- Safe OPC UA `Session.Call` usage with exact OPC UA `StatusCode` reporting.
-- State and equipment snapshots.
-- WebSocket live stream.
-- Responsive browser Workbench.
-- iPad/tablet access on the same Wi-Fi network.
-- Early multi-robot gateway registry support.
+- Multi-robot registry with robot-scoped status, discovery, and snapshots.
+- Robot-scoped SystemOperation and TaskControlOperation commands.
+- Isolated robot-scoped WebSocket live streams and DataChange notifications.
+- Multi-robot Workbench fleet dashboard with responsive laptop, tablet, and phone layouts.
+- Hierarchical state-machine visualization, component-aware axis and motor widgets where runtime data exists, technical provenance, and exact OPC UA StatusCode visibility.
 
-## Standards discipline
-
-The client should not guess information model semantics, state-machine semantics, method signatures, `ReferenceTypes`, `ModellingRules`, instance `NodeIds`, or vendor-specific naming conventions.
-
-It should use the OPC UA Robotics specification, local NodeSets and generated-code truth, the server-provided runtime model, runtime discovery, and method metadata. This repository is a reference implementation and interoperability demonstration. It does not claim certification, full conformance testing, or implementation of every OPC UA Robotics feature.
-
-## Repository structure
+## Architecture
 
 ```text
-src/
-  Robotics.ReferenceServer/
-  Robotics.ReferenceClient/
-  Robotics.Client.Core/
-  Robotics.ClientGateway/
-  Robotics.Workbench/
-generated/
-  opcua-robotics/
-docs/
-  images/
+Vendor OPC UA Robotics Server
+        | opc.tcp
+Robotics.Client.Core inside Robotics.ClientGateway
+        | HTTP/WebSocket
+Hosted Robotics.Workbench in the browser
 ```
 
-## Requirements
+Bundling is a deployment simplification. Gateway and Workbench responsibilities remain separate: the Workbench never speaks `opc.tcp`; `Robotics.Client.Core` remains the OPC UA client logic layer.
 
-- .NET 10 SDK
-- Node.js
-- npm
-- Git
-- Optional: UaExpert or another OPC UA inspection tool
+## Portable vendor package
 
-## Getting started
+Download and extract the ZIP, start the vendor robot/simulator and OPC UA Robotics server, edit the root `robots.json`, and double-click `OPC-UA-Robotics-Workbench.exe`. The browser opens automatically. Restart after changing `robots.json`.
 
-```powershell
-git clone https://github.com/umati/OPC-UA-for-Robotics-Reference-Implementation.git
-cd OPC-UA-for-Robotics-Reference-Implementation
-dotnet build
-cd src\Robotics.Workbench
-npm install
-npm run build
-cd ..\..
-```
+The root is intentionally calm: `OPC-UA-Robotics-Workbench.exe` is the launcher, `robots.json` is the only normal configuration file to edit, `app\` contains internal gateway runtime files, `logs\` contains logs, `certificates\` contains the OPC UA application/trusted/rejected/issuer stores, `docs\` contains detailed guidance, and `licenses\` contains notices. Do not move individual files out of the package.
 
-## Running the local demo
+Vendors do not need the reference server, Visual Studio, the .NET SDK, Node.js, npm, or source code. See [README-FIRST.txt](packaging/README-FIRST.txt) and [docs/vendor-portable-package.md](docs/vendor-portable-package.md).
 
-Start three PowerShell terminals.
+For local self-testing, a vendor runs its robot or simulator, its OPC UA Robotics server, and the portable Workbench bundle. For the central tradeshow setup, each vendor runs only its robot/simulator and OPC UA Robotics server; the demonstration operator runs one central portable Gateway/Workbench bundle, one multi-robot `robots.json`, and one browser or iPad.
 
-**Terminal 1 — reference server**
+The package is not a certification tool. A successful test demonstrates compatibility with this reference-client implementation and its tested use cases; it does not constitute OPC Foundation certification, formal conformance, or proof of complete OPC UA Robotics implementation.
 
-```powershell
-dotnet run --project src/Robotics.ReferenceServer/Robotics.ReferenceServer.csproj
-```
+## Configuration
 
-Endpoint: `opc.tcp://localhost:4840/RoboticsReferenceServer`
-
-**Terminal 2 — gateway**
-
-```powershell
-dotnet run --project src/Robotics.ClientGateway/Robotics.ClientGateway.csproj --urls http://localhost:5080
-```
-
-**Terminal 3 — Workbench**
-
-```powershell
-cd src\Robotics.Workbench
-npm run dev -- --port 5174
-```
-
-Open `http://localhost:5174` and set the gateway field to `http://localhost:5080`.
-
-## Running from an iPad or tablet on the same Wi-Fi
-
-Find the laptop address with `ipconfig`. Start the gateway and Vite so they listen on the network interface:
-
-```powershell
-ipconfig
-dotnet run --project src/Robotics.ClientGateway/Robotics.ClientGateway.csproj --urls http://0.0.0.0:5080
-cd src\Robotics.Workbench
-npm run dev -- --host 0.0.0.0 --port 5174
-```
-
-Open `http://YOUR_LAPTOP_IP:5174` on the iPad and set the gateway field to `http://YOUR_LAPTOP_IP:5080`. The CORS configuration must include `http://YOUR_LAPTOP_IP:5174`. Windows Firewall may need inbound rules for ports 5080 and 5174.
-
-## Gateway API overview
-
-```text
-GET /health
-GET /api/opcua/status
-GET /api/robotics/discovery
-GET /api/robotics/snapshot?selection=all
-GET /api/robotics/snapshot?selection=states
-GET /api/robotics/snapshot?selection=equipment
-GET /ws/robotics/live
-```
-
-## Method-call endpoints
-
-System operation:
-
-```text
-POST /api/robotics/system/get-ready
-POST /api/robotics/system/start
-POST /api/robotics/system/stop
-POST /api/robotics/system/stand-down
-```
-
-Task control operation:
-
-```text
-POST /api/robotics/task/load-by-name
-POST /api/robotics/task/start
-POST /api/robotics/task/stop
-POST /api/robotics/task/reset-to-program-start
-POST /api/robotics/task/unload-program
-```
-
-HTTP success does not mean OPC UA `Good`. The response carries the exact OPC UA call `StatusCode`; non-Good statuses remain visible and useful for diagnosis and interoperability testing.
-
-Example PowerShell calls:
-
-```powershell
-Invoke-RestMethod -Method Post http://localhost:5080/api/robotics/system/get-ready -ContentType "application/json" -Body '{}' | ConvertTo-Json -Depth 20
-Invoke-RestMethod -Method Post http://localhost:5080/api/robotics/task/load-by-name -ContentType "application/json" -Body '{ "programName": "axis-range-demo" }' | ConvertTo-Json -Depth 20
-Invoke-RestMethod -Method Post http://localhost:5080/api/robotics/task/start -ContentType "application/json" -Body '{}' | ConvertTo-Json -Depth 20
-```
-
-## Live WebSocket stream
-
-```powershell
-wscat -c "ws://localhost:5080/ws/robotics/live?selection=all&sendInitialSnapshot=true"
-```
-
-## Multi-robot registry
-
-The gateway has early multi-robot registry support:
-
-```text
-GET /api/robots
-GET /api/robots/{robotId}/status
-GET /api/robots/{robotId}/discovery
-GET /api/robots/{robotId}/snapshot?selection=all|states|equipment
-```
-
-Example `appsettings` configuration:
+The packaged file is `<distribution root>\robots.json`:
 
 ```json
-"Robots": [
-  {
-    "id": "reference-robot",
-    "displayName": "Reference Robot Server",
-    "endpointUrl": "opc.tcp://localhost:4840/RoboticsReferenceServer",
-    "enabled": true
-  }
-]
+{
+  "robots": [
+    {
+      "id": "my-robot",
+      "displayName": "My Robot",
+      "endpointUrl": "opc.tcp://192.168.50.21:4840/RoboticsServer",
+      "enabled": true
+    }
+  ]
+}
 ```
 
-If `Robots` is empty or absent, the registry can create a default robot from `OpcUa:EndpointUrl`. Robot-scoped discovery and snapshots are available, but command execution and WebSocket streaming may still use the default/single robot unless robot-scoped command endpoints have been added.
+IDs are URL-safe and unique. Endpoints must be absolute `opc.tcp` URIs with a valid port. At least one robot must be enabled. Multiple robots use additional entries in the same array. Configuration precedence is: internal appsettings defaults, environment-specific appsettings, external `robots.json`, environment variables, then command-line arguments. `robots.json` is read once at startup; restart after edits. Development remains backward compatible with the `Robots` section and the legacy `OpcUa:EndpointUrl` fallback when no registry is configured.
 
-## Vendor testing guide
+## Robot-scoped API
 
-1. Start a vendor OPC UA Robotics server.
-2. Expose its OPC UA Robotics model.
-3. Configure the gateway endpoint or `Robots` registry.
-4. Start the gateway and Workbench.
-5. Verify status, discovery, snapshot, method calls, and WebSocket live updates.
-6. Send the evidence back to the project.
+```text
+GET  /api/robots
+GET  /api/robots/{robotId}/status
+GET  /api/robots/{robotId}/discovery
+GET  /api/robots/{robotId}/snapshot?selection=all
+POST /api/robots/{robotId}/system/get-ready
+POST /api/robots/{robotId}/system/start
+POST /api/robots/{robotId}/system/stop
+POST /api/robots/{robotId}/system/stand-down
+POST /api/robots/{robotId}/task/load-by-name
+POST /api/robots/{robotId}/task/start
+POST /api/robots/{robotId}/task/stop
+POST /api/robots/{robotId}/task/reset-to-program-start
+POST /api/robots/{robotId}/task/unload-program
+GET  /ws/robots/{robotId}/live
+```
 
-Please report:
+Legacy default endpoints remain available under `/api/robotics/...` and `/ws/robotics/live` for backward compatibility.
 
-1. Endpoint URL.
-2. Security policy and mode.
-3. Simulated or real robot.
-4. Result of `/api/opcua/status` or robot-scoped status.
-5. Result of discovery.
-6. Result of snapshot.
-7. Method-call results.
-8. A WebSocket sample.
-9. Non-Good `StatusCode` values.
-10. Missing methods or unexpected model structures.
+## Development
 
-## Development commands
+The gateway can run independently and Vite can run independently. Vite development uses `http://localhost:5173` and may override the gateway with `VITE_GATEWAY_URL`; development CORS remains configured in appsettings. A missing production `wwwroot` does not prevent API startup. Developers can continue to run the reference server and `VerifyRobotCommands.ps1`.
+
+The hosted production flow is one origin: `/` serves the compiled Workbench, `/api/...` serves REST, and `/ws/...` serves WebSockets. Production REST uses `window.location.origin`; WebSockets select `ws` or `wss` from the page protocol.
+
+## Certificates and logs
+
+Portable packages use package-relative `logs\` and `certificates\application`, `trusted`, `rejected`, and `issuers` directories. Production rejects untrusted server certificates and writes the public certificate to `certificates\rejected`; review it and copy only that public certificate into `certificates\trusted`, then restart or retry. Never copy private certificate material or re-enable automatic trust. The launcher establishes `OPCUA_ROBOTICS_WORKBENCH_ROOT`; package-root precedence is explicit `PackageRoot` command-line configuration, that environment variable, then the application-base fallback. Development retains the configured Vite CORS policy; hosted production is same-origin and does not apply CORS.
+
+## Verification
+
+Do not change OPC UA information-model semantics, vendor NodeIds, namespace indexes, BrowseNames, method signatures, or exact StatusCode handling. Developers should run:
 
 ```powershell
-dotnet build
-cd src\Robotics.Workbench
-npm run build
-npm run dev -- --port 5174
+.\VerifyRobotCommands.ps1
 ```
-
-## Current limitations
-
-- Reference/demo stack, not a certification tool.
-- Full fleet UI is still under development.
-- Simultaneous multi-robot command orchestration is not yet complete.
-- Robot-scoped WebSocket aggregation is not yet complete.
-- Certificate handling is development-oriented.
-- Security policy/mode selector UI is not yet implemented.
-- Vendor differences are intentionally not hidden.
-- Missing methods should be reported, not faked.
 
 ## Roadmap
 
-- Robot-scoped command endpoints.
-- Robot selector in Workbench.
-- Multi-robot live streams.
-- Fleet dashboard.
-- Simultaneous command orchestration with per-robot results.
-- Certificate trust workflow.
-- Security policy/mode selection.
-- Tradeshow-ready multi-robot choreography.
+Future work includes selected-robot orchestration, guided in-app preflight, certificate trust UI, support-bundle export, reconnect hardening, signed releases, an installer, and vendor test report generation.
 
-## License
-
-See [LICENSE](LICENSE).
+Further reading: [architecture](docs/architecture.md), [Workbench data flow](docs/workbench-data-flow.md), [portable vendor package](docs/vendor-portable-package.md), and [visualization](docs/visualization.md).
