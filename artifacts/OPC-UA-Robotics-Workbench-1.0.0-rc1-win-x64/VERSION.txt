@@ -1,4 +1,4 @@
 OPC UA Robotics Workbench
 Version: 1.0.0-rc1
-Revision: c18a-uncommitted
+Revision: a29cd9d
 Runtime: win-x64

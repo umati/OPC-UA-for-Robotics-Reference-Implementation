@@ -1,7 +1,7 @@
 {
   "robots": [
     {
-      "id": "my-robot",
+      "id": "reference-robot",
       "displayName": "My OPC UA Robotics Server",
       "endpointUrl": "opc.tcp://localhost:4840/RoboticsReferenceServer",
       "enabled": true
