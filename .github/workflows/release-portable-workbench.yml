@@ -1,36 +1,175 @@
-name: Release portable Workbench
+name: Build Portable Robotics Workbench
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: Semantic version
+        description: "Package version, for example 1.0.0-rc1"
         required: true
-        type: string
+        default: "1.0.0-rc1"
+
   push:
-    tags: ["v*.*.*"]
+    tags:
+      - "workbench-v*"
+
+permissions:
+  contents: write
 
 jobs:
-  package:
+  build-portable-workbench:
+    name: Build Windows x64 package
     runs-on: windows-latest
-    permissions:
-      contents: write
+
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: src/Robotics.Workbench/package-lock.json }
-      - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: 10.0.x }
-      - name: Build, publish, validate, and package clean launcher layout
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine package version
+        id: version
         shell: pwsh
         run: |
-          $version = if ('${{ inputs.version }}') { '${{ inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
-          # Publish-PortableWorkbench.ps1 owns the package layout validation and checksum.
-          .\scripts\Publish-PortableWorkbench.ps1 -Version $version -OutputDirectory .\artifacts -SourceRevisionId '${{ github.sha }}'
-      - uses: actions/upload-artifact@v4
-        with: { name: portable-workbench, path: artifacts/* }
-      - name: Attach release assets
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with: { files: artifacts/* }
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          }
+          else {
+            $tag = "${{ github.ref_name }}"
+
+            if (-not $tag.StartsWith("workbench-v")) {
+              throw "Unexpected tag format: $tag"
+            }
+
+            $version = $tag.Substring("workbench-v".Length)
+          }
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "Package version could not be determined."
+          }
+
+          "version=$version" | Out-File `
+            -FilePath $env:GITHUB_OUTPUT `
+            -Encoding utf8 `
+            -Append
+
+          Write-Host "Package version: $version"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: |
+            src/Robotics.Workbench/package-lock.json
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Determine source revision
+        id: revision
+        shell: pwsh
+        run: |
+          $revision = git rev-parse --short HEAD
+
+          if ([string]::IsNullOrWhiteSpace($revision)) {
+            throw "Source revision could not be determined."
+          }
+
+          "revision=$revision" | Out-File `
+            -FilePath $env:GITHUB_OUTPUT `
+            -Encoding utf8 `
+            -Append
+
+          Write-Host "Source revision: $revision"
+
+      - name: Build portable package
+        shell: pwsh
+        run: |
+          .\scripts\Publish-PortableWorkbench.ps1 `
+            -Version "${{ steps.version.outputs.version }}" `
+            -OutputDirectory ".\artifacts" `
+            -SourceRevisionId "${{ steps.revision.outputs.revision }}"
+
+      - name: Validate generated release files
+        shell: pwsh
+        run: |
+          $zipFiles = @(Get-ChildItem `
+            -Path ".\artifacts" `
+            -Filter "*.zip" `
+            -File)
+
+          $checksumFiles = @(Get-ChildItem `
+            -Path ".\artifacts" `
+            -Filter "*.sha256" `
+            -File)
+
+          if ($zipFiles.Count -ne 1) {
+            throw "Expected exactly one ZIP file, but found $($zipFiles.Count)."
+          }
+
+          if ($checksumFiles.Count -ne 1) {
+            throw "Expected exactly one SHA-256 checksum file, but found $($checksumFiles.Count)."
+          }
+
+          Write-Host "ZIP:"
+          Write-Host $zipFiles[0].FullName
+
+          Write-Host "Checksum:"
+          Write-Host $checksumFiles[0].FullName
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OPC-UA-Robotics-Workbench-${{ steps.version.outputs.version }}-win-x64
+          path: |
+            artifacts/*.zip
+            artifacts/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub prerelease
+        if: startsWith(github.ref, 'refs/tags/workbench-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $zip = Get-ChildItem `
+            -Path ".\artifacts" `
+            -Filter "*.zip" `
+            -File |
+            Select-Object -First 1
+
+          $checksum = Get-ChildItem `
+            -Path ".\artifacts" `
+            -Filter "*.sha256" `
+            -File |
+            Select-Object -First 1
+
+          if ($null -eq $zip -or $null -eq $checksum) {
+            throw "Release artifacts were not found."
+          }
+
+          $releaseArguments = @(
+            "release",
+            "create",
+            $tag,
+            $zip.FullName,
+            $checksum.FullName,
+            "--title",
+            "OPC UA Robotics Workbench $env:VERSION",
+            "--generate-notes"
+          )
+
+          if ($env:VERSION.Contains("-")) {
+            $releaseArguments += "--prerelease"
+          }
+
+          & gh @releaseArguments
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "GitHub release creation failed with exit code $LASTEXITCODE."
+          }
