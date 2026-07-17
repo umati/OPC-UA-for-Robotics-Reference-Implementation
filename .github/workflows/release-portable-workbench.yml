@@ -179,22 +179,34 @@ jobs:
             throw "Validated release checksum was not found: $checksum"
           }
 
-          $releaseArguments = @(
-            "release",
-            "create",
-            $tag,
-            $zip.FullName,
-            $checksum.FullName,
-            "--title",
-            "OPC UA Robotics Workbench $env:VERSION",
-            "--generate-notes"
-          )
+          $releaseExists = $false
 
-          if ($env:VERSION.Contains("-")) {
-            $releaseArguments += "--prerelease"
+          & gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+              $releaseExists = $true
           }
 
-          & gh @releaseArguments
+          if ($releaseExists) {
+              & gh release upload $tag $zip $checksum --clobber
+          }
+          else {
+              $releaseArguments = @(
+                  "release",
+                  "create",
+                  $tag,
+                  $zip,
+                  $checksum,
+                  "--title",
+                  "OPC UA Robotics Workbench $env:VERSION",
+                  "--generate-notes"
+              )
+
+              if ($env:VERSION.Contains("-")) {
+                  $releaseArguments += "--prerelease"
+              }
+
+              & gh @releaseArguments
+          }
 
           if ($LASTEXITCODE -ne 0) {
             throw "GitHub release creation failed with exit code $LASTEXITCODE."
