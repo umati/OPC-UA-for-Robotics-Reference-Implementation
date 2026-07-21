@@ -1,6 +1,8 @@
 export type Robot={id:string;displayName:string;endpointUrl:string;enabled:boolean;imageUrl?:string};
 export type RobotStatus={robotId:string;displayName:string;endpointUrl:string;connected:boolean;roboticsNamespaceFound:boolean;roboticsNamespaceIndex?:number|null;error?:string|null};
-export type SnapshotValue={label:string;browseName:string;nodeId:string;statusCode:string;valueText:string;discovery:string;dataType?:string|null;sourceTimestamp?:string|null;serverTimestamp?:string|null;engineeringUnits?:string|null;euRange?:string|null;lastGoodValueText?:string;lastGoodSourceTimestamp?:string|null;lastGoodServerTimestamp?:string|null;lastGoodUpdatedAt?:number};
+export type EngineeringUnitMetadata={namespaceUri?:string|null;unitId?:number|null;displayName?:string|null;description?:string|null;rawDiagnostic?:string|null};
+export type EuRangeMetadata={low:number;high:number;rawDiagnostic?:string|null};
+export type SnapshotValue={label:string;browseName:string;nodeId:string;statusCode:string;valueText:string;discovery:string;dataType?:string|null;sourceTimestamp?:string|null;serverTimestamp?:string|null;engineeringUnits?:string|null;engineeringUnit?:EngineeringUnitMetadata|null;euRange?:string|null;euRangeMetadata?:EuRangeMetadata|null;engineeringUnitsRaw?:string|null;euRangeRaw?:string|null;lastGoodValueText?:string;lastGoodSourceTimestamp?:string|null;lastGoodServerTimestamp?:string|null;lastGoodUpdatedAt?:number};
 export type SnapshotSection={name:string;values:SnapshotValue[]};
 export type Snapshot={connected:boolean;endpointUrl:string;generatedAtUtc:string;sections:SnapshotSection[];warnings:string[]};
 export type Node={browseName:string;displayName:string;nodeId:string;typeDefinition:string;evidence:string};

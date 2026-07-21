@@ -20,7 +20,33 @@ public sealed record SnapshotValueReport(
     string Value,
     bool Heuristic,
     string? EngineeringUnits = null,
-    string? EURange = null);
+    string? EURange = null,
+    EngineeringUnitMetadataReport? EngineeringUnit = null,
+    EuRangeMetadataReport? EURangeMetadata = null,
+    string? EngineeringUnitsRaw = null,
+    string? EURangeRaw = null);
+
+public sealed record EngineeringUnitMetadataReport(
+    string? NamespaceUri,
+    int? UnitId,
+    string? DisplayName,
+    string? Description,
+    string? RawDiagnostic = null);
+
+public sealed record EuRangeMetadataReport(
+    double Low,
+    double High,
+    string? RawDiagnostic = null);
+
+public sealed record EngineeringUnitDecodeResult(
+    EngineeringUnitMetadataReport? Metadata,
+    string? HumanReadable,
+    string? RawDiagnostic);
+
+public sealed record EuRangeDecodeResult(
+    EuRangeMetadataReport? Metadata,
+    string? HumanReadable,
+    string? RawDiagnostic = null);
 
 public sealed record SnapshotNode(
     string SectionName,

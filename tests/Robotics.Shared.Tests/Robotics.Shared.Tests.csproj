@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Robotics.Shared\Robotics.Shared.csproj" />
+    <ProjectReference Include="..\..\src\Robotics.Client.Core\Robotics.Client.Core.csproj" />
+    <ProjectReference Include="..\..\src\Robotics.ReferenceServer\Robotics.ReferenceServer.csproj" />
   </ItemGroup>
 
 </Project>

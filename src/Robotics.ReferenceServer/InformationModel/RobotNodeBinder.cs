@@ -33,12 +33,12 @@ public sealed class RobotNodeBinder
         handles.SerialNumber = FindVariable(importedNodes, instanceNamespaceIndex, $"{MotionDevicePath}/SerialNumber", handles, "MotionDevice SerialNumber");
         handles.ProductCode = FindVariable(importedNodes, instanceNamespaceIndex, $"{MotionDevicePath}/ProductCode", handles, "MotionDevice ProductCode");
 
-        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.S, handles.SAxis, handles);
-        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.L, handles.LAxis, handles);
-        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.U, handles.UAxis, handles);
-        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.R, handles.RAxis, handles);
-        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.B, handles.BAxis, handles);
-        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.T, handles.TAxis, handles);
+        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.S, handles.SAxis, handles, context);
+        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.L, handles.LAxis, handles, context);
+        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.U, handles.UAxis, handles, context);
+        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.R, handles.RAxis, handles, context);
+        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.B, handles.BAxis, handles, context);
+        BindAxis(importedNodes, instanceNamespaceIndex, RobotAxisName.T, handles.TAxis, handles, context);
 
         return handles;
     }
@@ -76,7 +76,8 @@ public sealed class RobotNodeBinder
         ushort instanceNamespaceIndex,
         RobotAxisName axisName,
         AxisNodeHandles axisHandles,
-        RobotNodeHandles robotHandles)
+        RobotNodeHandles robotHandles,
+        ISystemContext context)
     {
         AxisNodePath path = AxisNodePaths[axisName];
         string axisBasePath = $"{AxisPathPrefix}/{path.AxisObjectName}";
@@ -84,6 +85,11 @@ public sealed class RobotNodeBinder
 
         axisHandles.AxisObject = FindNode(importedNodes, instanceNamespaceIndex, axisBasePath, robotHandles, $"{path.AxisObjectName} object");
         axisHandles.PositionDegrees = FindVariable(importedNodes, instanceNamespaceIndex, $"{axisBasePath}/ActualPosition", robotHandles, $"{path.AxisObjectName} ActualPosition");
+        if (axisHandles.PositionDegrees is not null
+            && !RobotEngineeringUnitMetadata.InitializeActualPositionEngineeringUnits(axisHandles.PositionDegrees, context))
+        {
+            robotHandles.MissingExpectedNodes.Add($"{path.AxisObjectName} ActualPosition EngineeringUnits property: child was not found.");
+        }
         axisHandles.VelocityDegreesPerSecond = FindVariable(importedNodes, instanceNamespaceIndex, $"{axisBasePath}/ActualSpeed", robotHandles, $"{path.AxisObjectName} ActualSpeed");
         axisHandles.TemperatureCelsius = FindVariable(importedNodes, instanceNamespaceIndex, $"{motorBasePath}/MotorTemperature", robotHandles, $"{path.MotorObjectName} MotorTemperature");
 

@@ -263,7 +263,7 @@ public sealed class SnapshotDiscoveryService(Session session)
 
             foreach (NodeDiscoveryInfo axis in motionDevice.Axes)
             {
-                AddCuratedEquipmentVariables(nodes, "Axes", axis.NodeId, $"{motionDevice.Node.BrowseName}.Axes.{axis.BrowseName}", AxisVariableNames, parameterSetPath: true);
+                AddAxisEquipmentVariables(nodes, axis, $"{motionDevice.Node.BrowseName}.Axes.{axis.BrowseName}");
             }
 
             foreach (PowerTrainReport powerTrain in motionDevice.PowerTrains)
@@ -276,6 +276,50 @@ public sealed class SnapshotDiscoveryService(Session session)
         }
 
         return nodes;
+    }
+
+    private void AddAxisEquipmentVariables(
+        List<SnapshotNode> nodes,
+        NodeDiscoveryInfo axis,
+        string rootBrowseName)
+    {
+        if (!TryParseNodeId(axis.NodeId, out NodeId? axisNodeId))
+        {
+            return;
+        }
+
+        // ActualPosition is owned by the discovered AxisType instance through its
+        // ParameterSet. Resolve both references from the live address space and
+        // retain the returned variable NodeId; never derive a child NodeId from text.
+        ReferenceDescription[] parameterSets = _browse.BrowseForward(
+                axisNodeId,
+                ReferenceTypeIds.HierarchicalReferences,
+                includeSubtypes: true,
+                NodeClass.Object)
+            .Where(reference => reference.BrowseName.Name == "ParameterSet")
+            .Take(2)
+            .ToArray();
+
+        if (parameterSets.Length != 1 || _browse.ToNodeId(parameterSets[0].NodeId) is not { } parameterSetNodeId)
+        {
+            return;
+        }
+
+        ushort roboticsNamespaceIndex = GetRoboticsNamespaceIndex();
+        foreach (ReferenceDescription variable in _browse.BrowseForward(
+                     parameterSetNodeId,
+                     ReferenceTypeIds.HierarchicalReferences,
+                     includeSubtypes: true,
+                     NodeClass.Variable)
+                 .Where(reference => IsBrowseNameMatch(reference.BrowseName, AxisVariableNames, roboticsNamespaceIndex)))
+        {
+            AddVariable(
+                nodes,
+                "Axes",
+                $"{rootBrowseName}.ParameterSet.{variable.BrowseName.Name}",
+                variable,
+                heuristic: false);
+        }
     }
 
     private void AddCuratedEquipmentVariables(

@@ -67,6 +67,26 @@ For a real robot, a value may originate in the controller or servo-drive runtime
 
 The Workbench never reads this internal value directly.
 
+### Engineering unit metadata
+
+OPC UA `EngineeringUnits` is not a display string: it is the `EUInformation` structure defined by OPC UA Part 8. The gateway decodes direct values, decoded ExtensionObject bodies, and SDK-decodable encoded ExtensionObjects before JSON serialization. The old generic text `ExtensionObject(TypeId=i=887, Body=EUInformation)` is diagnostic evidence only and is never the primary unit value.
+
+Snapshot values remain backwards compatible with `engineeringUnits` and add:
+
+```json
+{
+  "engineeringUnits": "°",
+  "engineeringUnit": {
+    "namespaceUri": "http://www.opcfoundation.org/UA/units/un/cefact",
+    "unitId": 17476,
+    "displayName": "°",
+    "description": "degree [unit of angle]"
+  }
+}
+```
+
+The Workbench uses structured display/description evidence and the compatibility text to recognize degrees or radians. It does not infer degrees from `TypeId i=887`; missing or unsupported units do not animate a joint. If `EURange` is a standard `Range`, the additive `euRangeMetadata` contains `low` and `high`; otherwise the existing value is left unresolved with diagnostic evidence where available.
+
 ---
 
 ### 2. Vendor OPC UA Robotics Server

@@ -461,9 +461,13 @@ public sealed class GatewayOpcUaClient(
             report.SourceTimestamp,
             report.ServerTimestamp,
             report.Value,
-            report.Heuristic ? "heuristic" : "standard",
-            report.EngineeringUnits,
-            report.EURange);
+              report.Heuristic ? "heuristic" : "standard",
+              report.EngineeringUnits,
+              report.EURange,
+              report.EngineeringUnit is null ? null : new EngineeringUnitMetadataDto(report.EngineeringUnit.NamespaceUri, report.EngineeringUnit.UnitId, report.EngineeringUnit.DisplayName, report.EngineeringUnit.Description, report.EngineeringUnit.RawDiagnostic),
+              report.EURangeMetadata is null ? null : new EuRangeMetadataDto(report.EURangeMetadata.Low, report.EURangeMetadata.High, report.EURangeMetadata.RawDiagnostic),
+              report.EngineeringUnitsRaw,
+              report.EURangeRaw);
     }
 
     private static MethodCallArgumentDto ToDto(MethodInvocationArgumentValue argument)

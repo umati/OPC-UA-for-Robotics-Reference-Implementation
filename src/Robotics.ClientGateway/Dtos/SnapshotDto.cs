@@ -25,7 +25,14 @@ public sealed record SnapshotValueDto(
     string ValueText,
     string Discovery,
     string? EngineeringUnits = null,
-    string? EURange = null);
+    string? EURange = null,
+    EngineeringUnitMetadataDto? EngineeringUnit = null,
+    EuRangeMetadataDto? EURangeMetadata = null,
+    string? EngineeringUnitsRaw = null,
+    string? EURangeRaw = null);
+
+public sealed record EngineeringUnitMetadataDto(string? NamespaceUri, int? UnitId, string? DisplayName, string? Description, string? RawDiagnostic = null);
+public sealed record EuRangeMetadataDto(double Low, double High, string? RawDiagnostic = null);
 
 public enum SnapshotSelection
 {

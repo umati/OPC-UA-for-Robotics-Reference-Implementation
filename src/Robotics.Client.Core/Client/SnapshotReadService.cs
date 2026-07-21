@@ -78,7 +78,7 @@ public sealed class SnapshotReadService(Session session)
                 ? results[0]
                 : new DataValue { StatusCode = new StatusCode(StatusCodes.BadUnexpectedError) };
 
-            (string? engineeringUnits, string? euRange) = ReadAnalogProperties(node.NodeId);
+            AnalogProperties analogProperties = ReadAnalogProperties(node.NodeId);
             return new SnapshotValueReport(
                 node.Label,
                 node.BrowseName,
@@ -90,8 +90,12 @@ public sealed class SnapshotReadService(Session session)
                 IsDefaultTimestamp(value.ServerTimestamp) ? null : value.ServerTimestamp,
                 StatusCode.IsNotGood(value.StatusCode) ? "<not available>" : FormatValue(value.Value),
                 node.Heuristic,
-                engineeringUnits,
-                euRange);
+                analogProperties.EngineeringUnits,
+                analogProperties.EURange,
+                analogProperties.EngineeringUnit,
+                analogProperties.EURangeMetadata,
+                analogProperties.EngineeringUnitsRaw,
+                analogProperties.EURangeRaw);
         }
         catch (ServiceResultException ex)
         {
@@ -161,7 +165,7 @@ public sealed class SnapshotReadService(Session session)
         return SafeValueRenderer.Format(value);
     }
 
-    private (string? EngineeringUnits, string? EURange) ReadAnalogProperties(NodeId nodeId)
+    private AnalogProperties ReadAnalogProperties(NodeId nodeId)
     {
         var browser = new Browser(session)
         {
@@ -179,6 +183,10 @@ public sealed class SnapshotReadService(Session session)
 
         string? engineeringUnits = null;
         string? euRange = null;
+        EngineeringUnitMetadataReport? engineeringUnit = null;
+        EuRangeMetadataReport? euRangeMetadata = null;
+        string? engineeringUnitsRaw = null;
+        string? euRangeRaw = null;
         foreach (ReferenceDescription property in properties)
         {
             NodeId? propertyNodeId = ExpandedNodeId.ToNodeId(property.NodeId, session.NamespaceUris);
@@ -195,22 +203,28 @@ public sealed class SnapshotReadService(Session session)
 
             if (property.BrowseName.Name == "EngineeringUnits")
             {
-                engineeringUnits = value.Value switch
-                {
-                    EUInformation information => information.DisplayName?.Text,
-                    _ => SafeValueRenderer.Format(value.Value)
-                };
+                EngineeringUnitDecodeResult decoded = OpcUaMetadataDecoder.DecodeEngineeringUnits(value.Value);
+                engineeringUnits = decoded.HumanReadable;
+                engineeringUnit = decoded.Metadata;
+                engineeringUnitsRaw = decoded.RawDiagnostic;
             }
             else if (property.BrowseName.Name == "EURange")
             {
-                euRange = value.Value switch
-                {
-                    Opc.Ua.Range range => $"{range.Low.ToString(System.Globalization.CultureInfo.InvariantCulture)} … {range.High.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
-                    _ => SafeValueRenderer.Format(value.Value)
-                };
+                EuRangeDecodeResult decoded = OpcUaMetadataDecoder.DecodeRange(value.Value);
+                euRange = decoded.HumanReadable;
+                euRangeMetadata = decoded.Metadata;
+                euRangeRaw = decoded.RawDiagnostic;
             }
         }
 
-        return (engineeringUnits, euRange);
+        return new AnalogProperties(engineeringUnits, euRange, engineeringUnit, euRangeMetadata, engineeringUnitsRaw, euRangeRaw);
     }
+
+    private sealed record AnalogProperties(
+        string? EngineeringUnits,
+        string? EURange,
+        EngineeringUnitMetadataReport? EngineeringUnit,
+        EuRangeMetadataReport? EURangeMetadata,
+        string? EngineeringUnitsRaw,
+        string? EURangeRaw);
 }
