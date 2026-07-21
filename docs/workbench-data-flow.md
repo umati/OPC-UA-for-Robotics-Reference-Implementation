@@ -697,3 +697,9 @@ A reliable implementation preserves:
 - per-robot isolation
 - per-component isolation
 - a clear distinction between specification semantics and UI presentation
+
+## Live initial pose and health interpretation
+
+The robot-scoped REST snapshot establishes the first Workbench values. The robot-scoped WebSocket may also send an initial `snapshot` message before later `dataChange` messages; the frontend merges that message into only the matching robot view, then merges later changes by NodeId. The 3D viewport resolves validated ActualPosition values from that robot-scoped state before its first visible render, so it does not intentionally flash an all-zero measured pose.
+
+`lastGoodUpdatedAt` records the last valid value update and is not a heartbeat. A stationary robot may therefore have an old value-change time while its WebSocket remains connected and its current values remain usable. The viewport separates that motion/value history from stream health: connected and valid is Live, an explicit unhealthy/stale stream signal is Stale, and an authoritative disconnected socket is Disconnected. The frontend does not fabricate heartbeat messages or restart a connection because a value is unchanged.

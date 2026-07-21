@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from './api/gatewayClient';
 import { Discovery, LiveMessage, Robot, RobotDiagnostics, RobotStatus, Snapshot } from './api/types';
 import RobotCard from './components/RobotCard';
+import { isGoodStatus } from './robot3d/mapping';
 
 type RobotViewState = {
   status?: RobotStatus;
@@ -23,7 +24,7 @@ const seedGoodValues = (snapshot?: Snapshot) => snapshot && ({
   ...snapshot,
   sections: snapshot.sections.map(section => ({
     ...section,
-    values: section.values.map(value => /^Good/i.test(value.statusCode || '')
+    values: section.values.map(value => isGoodStatus(value.statusCode)
       ? { ...value, lastGoodValueText: value.valueText, lastGoodSourceTimestamp: value.sourceTimestamp, lastGoodServerTimestamp: value.serverTimestamp, lastGoodUpdatedAt: Date.now() }
       : value)
   }))
@@ -104,6 +105,10 @@ export default function App() {
     socket.onmessage = event => {
       try {
         const message: LiveMessage = JSON.parse(event.data);
+        if (message.type === 'snapshot' && Array.isArray(message.sections)) {
+          update(robot.id, view => ({ ...view, snapshot: seedGoodValues({ connected: true, endpointUrl: message.endpointUrl || robot.endpointUrl, generatedAtUtc: message.generatedAtUtc || new Date().toISOString(), sections: message.sections, warnings: [] }) }));
+          return;
+        }
         update(robot.id, view => {
           const merge = (snapshot?: Snapshot) => snapshot && ({
             ...snapshot,
@@ -111,7 +116,7 @@ export default function App() {
               ...section,
               values: section.values.map(value => {
                 if (value.nodeId !== message.nodeId) return value;
-                const good = /^Good/i.test(message.statusCode || '');
+                const good = isGoodStatus(message.statusCode);
                 return {
                   ...value,
                   valueText: good ? (message.valueText ?? value.valueText) : (value.lastGoodValueText ?? value.valueText),

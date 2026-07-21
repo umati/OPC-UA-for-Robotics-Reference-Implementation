@@ -32,5 +32,7 @@ export type Robot3DInput = {
   axes: DiscoveryNode[];
   snapshots: (Snapshot | undefined)[];
   live: string;
+  /** Optional authoritative health signal; absent means a connected socket is healthy. */
+  streamHealth?: 'healthy' | 'stale';
   now?: number;
 };

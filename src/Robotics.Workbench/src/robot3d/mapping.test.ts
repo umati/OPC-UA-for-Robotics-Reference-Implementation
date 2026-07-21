@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DiscoveryNode, Snapshot, SnapshotValue } from '../api/types';
 import { convertPosition, interpolatePose, localBrowseName, mapRobotAxes } from './mapping';
+import { genericSixAxisCalibration, visualJointRotation } from './GenericSixAxisRobot';
 
 const axis = (browseName: string): DiscoveryNode => ({
   browseName,
@@ -226,12 +227,31 @@ describe('robot 3D sample quality and freshness', () => {
     expect(state.joints[0].renderRadians).toBeUndefined();
   });
 
-  it('transitions to stale after the freshness bound', () => {
-    expect(mapRobotAxes(mappedInput({ lastGoodUpdatedAt: 6_999 }, 10_000)).freshness).toBe('stale');
+  it('keeps a stationary connected robot live when only the value-change time is old', () => {
+    expect(mapRobotAxes(mappedInput({ lastGoodUpdatedAt: 6_999 }, 10_000)).freshness).toBe('live');
+  });
+
+  it('honors an explicit stale communication health signal', () => {
+    expect(mapRobotAxes({ ...mappedInput(), streamHealth: 'stale' }).freshness).toBe('stale');
   });
 
   it('transitions to disconnected when the live stream is disconnected', () => {
     expect(mapRobotAxes({ ...mappedInput(), live: 'disconnected' }).freshness).toBe('disconnected');
+  });
+});
+
+describe('generic visual zero calibration', () => {
+  it('keeps zero offsets and directions in inspectable per-joint calibration', () => {
+    expect(genericSixAxisCalibration.map(item => item.joint)).toEqual(['S', 'L', 'U', 'R', 'B', 'T']);
+    expect(genericSixAxisCalibration[1].zeroRotation).toBeCloseTo(-65 * Math.PI / 180);
+    expect(genericSixAxisCalibration[2].zeroRotation).toBeCloseTo(75 * Math.PI / 180);
+    expect(genericSixAxisCalibration.every(item => item.direction === 1)).toBe(true);
+  });
+
+  it('uses the same continuous transform formula for zero and nonzero values', () => {
+    const calibration = genericSixAxisCalibration[2];
+    expect(visualJointRotation(calibration, 0)).toBe(calibration.zeroRotation);
+    expect(visualJointRotation(calibration, 0.01)).toBeCloseTo(calibration.zeroRotation + 0.01);
   });
 });
 

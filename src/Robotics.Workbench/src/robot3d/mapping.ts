@@ -1,7 +1,6 @@
 import { DiscoveryNode, Snapshot, SnapshotValue } from '../api/types';
 import { JointMapping, Robot3DInput, Robot3DState, UnitKind, VisualJoint, visualJoints } from './types';
 
-const STALE_AFTER_MS = 3000;
 const axisNames: Record<VisualJoint, string> = { S: 'SAxis', L: 'LAxis', U: 'UAxis', R: 'RAxis', B: 'BAxis', T: 'TAxis' };
 const numberFromText = (text?: string) => {
   const match = text?.match(/[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?/);
@@ -34,7 +33,7 @@ function positionFor(axis: DiscoveryNode, snapshots: (Snapshot | undefined)[]): 
   });
   return matches.length === 1 ? matches[0] : undefined;
 }
-function good(status?: string) {
+export function isGoodStatus(status?: string) {
   const value = status?.trim() || '';
   if (/^Good(?:$|[/\s:])/i.test(value) || ['GoodClamped', 'GoodLocalOverride', 'GoodSubNormal'].includes(value)) return true;
   if (/^0x[0-9a-f]+$/i.test(value)) return Number.parseInt(value.slice(2), 16) === 0;
@@ -42,7 +41,6 @@ function good(status?: string) {
 }
 
 export function mapRobotAxes(input: Robot3DInput): Robot3DState {
-  const now = input.now ?? Date.now();
   const names = new Map<string, DiscoveryNode[]>();
   input.axes.forEach(axis => {
     const name = localBrowseName(axis.browseName);
@@ -62,14 +60,17 @@ export function mapRobotAxes(input: Robot3DInput): Robot3DState {
     const lastGoodRaw = numberFromText(position.lastGoodValueText);
     const lastGoodConverted = lastGoodRaw === undefined ? { unit: converted.unit as UnitKind } : convertPosition(lastGoodRaw, position.engineeringUnits, position.engineeringUnit);
     const lastGoodAt = position.lastGoodUpdatedAt;
-    const freshness = input.live !== 'connected' ? 'disconnected' : !lastGoodAt || now - lastGoodAt > STALE_AFTER_MS ? 'stale' : 'live';
-    if (!good(position.statusCode) || raw === undefined || converted.radians === undefined) {
-      return { joint, axis, position, status: converted.unit === 'unsupported' || converted.unit === 'missing' ? 'unsupported' : 'mapped', unit: converted.unit, rawValue: raw, renderRadians: good(position.statusCode) ? converted.radians : lastGoodConverted.radians, lastGoodAt, freshness, evidence: `Axis ${axis.nodeId} (${axis.browseName}); ActualPosition ${position.nodeId}; ${position.discovery} discovery`, reason: !good(position.statusCode) ? `Latest StatusCode is ${position.statusCode}; retaining the last Good pose.` : 'Position is not a finite numeric value or has unsupported EngineeringUnits.' };
+    // A data-change timestamp is motion/value history, not a subscription heartbeat.
+    // With no explicit health signal, an open socket is the strongest available
+    // evidence that an unchanged but valid value is still usable.
+    const freshness = input.live === 'disconnected' || input.live === 'error' ? 'disconnected' : input.live === 'stale' || input.streamHealth === 'stale' ? 'stale' : isGoodStatus(position.statusCode) && raw !== undefined && converted.radians !== undefined ? 'live' : 'unavailable';
+    if (!isGoodStatus(position.statusCode) || raw === undefined || converted.radians === undefined) {
+      return { joint, axis, position, status: converted.unit === 'unsupported' || converted.unit === 'missing' ? 'unsupported' : 'mapped', unit: converted.unit, rawValue: raw, renderRadians: isGoodStatus(position.statusCode) ? converted.radians : lastGoodConverted.radians, lastGoodAt, freshness, evidence: `Axis ${axis.nodeId} (${axis.browseName}); ActualPosition ${position.nodeId}; ${position.discovery} discovery`, reason: !isGoodStatus(position.statusCode) ? `Latest StatusCode is ${position.statusCode}; retaining the last Good pose.` : 'Position is not a finite numeric value or has unsupported EngineeringUnits.' };
     }
     return { joint, axis, position, status: 'mapped', unit: converted.unit, rawValue: raw, renderRadians: converted.radians, lastGoodAt, freshness, evidence: `Axis ${axis.nodeId} (${axis.browseName}); ActualPosition ${position.nodeId}; ${position.discovery} discovery`, };
   });
   const mappingStatus = joints.every(joint => joint.status === 'mapped') ? 'mapped' : joints.some(joint => joint.status === 'ambiguous') ? 'ambiguous' : joints.some(joint => joint.status === 'unsupported') ? 'unsupported' : 'unavailable';
-  const freshness: Robot3DState['freshness'] = input.live !== 'connected' ? 'disconnected' : joints.some(joint => joint.freshness === 'stale') ? 'stale' : joints.every(joint => joint.freshness === 'live') ? 'live' : 'unavailable';
+  const freshness: Robot3DState['freshness'] = input.live === 'disconnected' || input.live === 'error' ? 'disconnected' : input.live === 'stale' || joints.some(joint => joint.freshness === 'stale') ? 'stale' : joints.every(joint => joint.freshness === 'live') ? 'live' : 'unavailable';
   return { mappingStatus, freshness, joints, explanation: mappingStatus === 'mapped' ? 'Generic operational visualization; not safety-rated and not an exact vendor digital twin.' : joints.find(joint => joint.reason)?.reason || 'Live six-axis mapping is not currently available.', source: 'robot-scoped snapshot and WebSocket dataChange stream' };
 }
 

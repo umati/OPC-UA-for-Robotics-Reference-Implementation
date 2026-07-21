@@ -80,3 +80,39 @@ The visual renderer interpolates presentation transforms between genuine Good sa
 The static vendor image/placeholder remains available when WebGL fails, mapping is ambiguous, data is unavailable, or the robot has a non-six-axis layout. The viewport has pointer orbit, bounded zoom, reset camera, a compact status indicator, and a joint diagnostics disclosure with axis identity, raw/status metadata, units, and evidence. Each card owns its scene, render loop, resize observer, controls, geometries, and materials. The loop pauses scene rendering when the document is hidden, and no global loop is created.
 
 The procedural model is deliberately low-complexity and unbranded. Future GLB support can preserve the same six joint groups while replacing only geometry and using a mapping manifest; this milestone does not claim that a GLB or exact kinematic model can be derived from OPC UA Robotics data.
+
+## C18C.1b expanded overview and calibrated initial pose
+
+The robot card now has a responsive operational overview above the existing health row and Motion components. On desktop it uses a fluid 46/54 grid: the left column is a dominant 3D viewport and the right column contains the robot eyebrow, display name, Manufacturer/Model/Serial number, actions, and a compact 2×2 summary of System Operation, Task Control, Control, and Mode. At narrower widths the viewport stacks above the information column; the summary remains two columns until narrow mobile widths.
+
+The viewport scales between approximately 360px and 460px high, uses a three-quarter camera, and retains orbit, bounded zoom, reset-camera, joint details, visibility pausing, cleanup, and both fallback paths. Camera state is owned by the scene instance and is not recreated for snapshot or WebSocket updates.
+
+### Initial pose and visual calibration
+
+The robot-scoped REST snapshot and the live stream’s initial `snapshot` message are both valid sources for initial rendering. The Workbench resolves each discovered `ActualPosition` by axis identity and qualified local BrowseName, validates the exact StatusCode and EngineeringUnits, converts verified degrees/radians to renderer radians, and seeds the first interpolation target from those values. Missing, Bad, Uncertain, unsupported, and non-finite values never become zero; a retained Good value may remain visible, while unresolved joints retain only the generic model baseline.
+
+The procedural model has inspectable per-joint calibration in `GenericSixAxisRobot.ts`:
+
+| Joint | Axis | Visual zero offset | Direction |
+| --- | --- | ---: | ---: |
+| S | Y | 0° | +1 |
+| L | Z | -65° | +1 |
+| U | Z | +75° | +1 |
+| R | X | 0° | +1 |
+| B | Z | 0° | +1 |
+| T | X | 0° | +1 |
+
+These are Workbench visual-model decisions, not OPC UA values. The renderer applies the continuous formula `visual rotation = zero offset + direction × ActualPosition`; there is no all-zero special-case branch or decorative idle animation. Consequently, six zero ActualPosition values produce the same calibrated articulated pose that the normal transform pipeline uses for every other position, and a small nonzero value moves continuously from it.
+
+### Freshness semantics
+
+The previous viewport freshness result aged `lastGoodUpdatedAt` into `Stale` even when the WebSocket and OPC UA connection were healthy. That timestamp is now treated as value-change history only. With a connected socket and usable Good values, an unchanged stationary robot remains `Live`. An explicit stream-health signal can still produce `Stale`; an authoritative socket disconnect produces `Disconnected`. No heartbeat, artificial value change, socket restart, or backend contract was added.
+
+The distinctions are:
+
+1. **Official OPC UA truth:** `ActualPosition`, EngineeringUnits, StatusCode, source timestamp, server timestamp, and discovered ownership.
+2. **Local runtime/model truth:** the gateway’s robot-scoped snapshot/dataChange merge and the runtime-discovered six-axis mapping.
+3. **Workbench visualization decision:** generic link geometry, pivots, axes, directions, zero offsets, interpolation, and camera framing.
+4. **UI presentation decision:** overview placement, badges, status labels, responsive stacking, and technical-detail disclosures.
+
+The generic model is an operational visualization, not a safety-rated robot digital twin. OPC UA Robotics does not by itself provide this model’s mesh geometry, link dimensions, visual zero offsets, or complete kinematic frames; an external model manifest or calibrated asset is required for vendor-accurate geometry.
