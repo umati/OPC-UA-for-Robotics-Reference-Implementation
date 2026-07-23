@@ -112,12 +112,15 @@ public sealed class RoboticsBrowseHelpers(Session session)
         NodeId? nodeId = ToNodeId(reference.NodeId);
         NodeId? typeDefinition = nodeId is null ? null : GetTypeDefinition(nodeId);
 
+        RuntimeIdentity? identity = nodeId is null ? null : RuntimeIdentity.From(nodeId, session.NamespaceUris);
         return new NodeDiscoveryInfo(
             FormatBrowseName(reference.BrowseName),
             reference.DisplayName.Text ?? reference.BrowseName.Name,
             nodeId?.ToString() ?? reference.NodeId.ToString(),
             typeDefinition?.ToString() ?? "unresolved",
-            "reference browse + HasTypeDefinition");
+            "reference browse + HasTypeDefinition",
+            identity?.StableKey,
+            identity?.NamespaceUri);
     }
 
     public ReferenceDescription? FindQualifiedChild(NodeId parentNodeId, string roboticsBrowseName, NodeId referenceTypeId, NodeClass nodeClassMask)

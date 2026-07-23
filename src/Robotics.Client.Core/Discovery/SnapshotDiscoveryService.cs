@@ -263,7 +263,7 @@ public sealed class SnapshotDiscoveryService(Session session)
 
             foreach (NodeDiscoveryInfo axis in motionDevice.Axes)
             {
-                AddAxisEquipmentVariables(nodes, axis, $"{motionDevice.Node.BrowseName}.Axes.{axis.BrowseName}");
+                AddAxisEquipmentVariables(nodes, motionDevice.Node, axis, $"{motionDevice.Node.BrowseName}.Axes.{axis.BrowseName}");
             }
 
             foreach (PowerTrainReport powerTrain in motionDevice.PowerTrains)
@@ -280,6 +280,7 @@ public sealed class SnapshotDiscoveryService(Session session)
 
     private void AddAxisEquipmentVariables(
         List<SnapshotNode> nodes,
+        NodeDiscoveryInfo motionDevice,
         NodeDiscoveryInfo axis,
         string rootBrowseName)
     {
@@ -318,7 +319,9 @@ public sealed class SnapshotDiscoveryService(Session session)
                 "Axes",
                 $"{rootBrowseName}.ParameterSet.{variable.BrowseName.Name}",
                 variable,
-                heuristic: false);
+                heuristic: false,
+                motionDeviceKey: motionDevice.StableKey,
+                axisKey: axis.StableKey);
         }
     }
 
@@ -413,33 +416,41 @@ public sealed class SnapshotDiscoveryService(Session session)
         string sectionName,
         string label,
         ReferenceDescription reference,
-        bool heuristic)
+        bool heuristic,
+        string? motionDeviceKey = null,
+        string? axisKey = null)
     {
         if (_browse.ToNodeId(reference.NodeId) is not { } nodeId)
         {
             return;
         }
 
-        nodes.Add(CreateSnapshotNode(sectionName, label, reference, heuristic));
+        nodes.Add(CreateSnapshotNode(sectionName, label, reference, heuristic, motionDeviceKey, axisKey));
     }
 
     private SnapshotNode CreateSnapshotNode(
         string sectionName,
         string label,
         ReferenceDescription reference,
-        bool heuristic = false)
+        bool heuristic = false,
+        string? motionDeviceKey = null,
+        string? axisKey = null)
     {
         if (_browse.ToNodeId(reference.NodeId) is not { } nodeId)
         {
             throw new InvalidOperationException($"Runtime discovery returned an unresolvable NodeId for '{label}'.");
         }
 
+        RuntimeIdentity identity = RuntimeIdentity.From(nodeId, session.NamespaceUris);
         return new SnapshotNode(
             sectionName,
             label,
             RoboticsBrowseHelpers.FormatBrowseName(reference.BrowseName),
             nodeId,
-            heuristic);
+            heuristic,
+            identity.StableKey,
+            motionDeviceKey,
+            axisKey);
     }
 
     private static IReadOnlyList<SnapshotNode> Deduplicate(IReadOnlyList<SnapshotNode> nodes)

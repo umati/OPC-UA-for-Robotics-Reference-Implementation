@@ -115,7 +115,8 @@ export default function App() {
             sections: snapshot.sections.map(section => ({
               ...section,
               values: section.values.map(value => {
-                if (value.nodeId !== message.nodeId) return value;
+                const sameIdentity = message.stableKey ? value.stableKey === message.stableKey : value.nodeId === message.nodeId;
+                if (!sameIdentity) return value;
                 const good = isGoodStatus(message.statusCode);
                 return {
                   ...value,
@@ -123,6 +124,9 @@ export default function App() {
                   statusCode: message.statusCode ?? value.statusCode,
                   sourceTimestamp: message.sourceTimestamp ?? value.sourceTimestamp,
                   serverTimestamp: message.serverTimestamp ?? value.serverTimestamp,
+                  stableKey: message.stableKey ?? value.stableKey,
+                  motionDeviceKey: message.motionDeviceKey ?? value.motionDeviceKey,
+                  axisKey: message.axisKey ?? value.axisKey,
                   ...(good ? {
                     lastGoodValueText: message.valueText ?? value.valueText,
                     lastGoodSourceTimestamp: message.sourceTimestamp ?? value.sourceTimestamp,

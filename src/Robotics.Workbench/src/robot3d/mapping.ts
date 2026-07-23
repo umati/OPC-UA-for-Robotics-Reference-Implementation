@@ -24,7 +24,9 @@ function positionFor(axis: DiscoveryNode, snapshots: (Snapshot | undefined)[]): 
   const expectedAxisName = localBrowseName(axis.browseName);
   const suffix = '.ParameterSet.ActualPosition';
   const matches = values(snapshots).filter(value => {
-    if (localBrowseName(value.browseName) !== 'ActualPosition' || !value.label.endsWith(suffix)) return false;
+    if (localBrowseName(value.browseName) !== 'ActualPosition') return false;
+    if (axis.stableKey && value.axisKey) return value.axisKey === axis.stableKey;
+    if (!value.label.endsWith(suffix)) return false;
     const axesMarker = '.Axes.';
     const axesIndex = value.label.lastIndexOf(axesMarker);
     if (axesIndex < 0) return false;

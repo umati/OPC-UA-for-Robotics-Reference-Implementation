@@ -95,7 +95,10 @@ public sealed class SnapshotReadService(Session session)
                 analogProperties.EngineeringUnit,
                 analogProperties.EURangeMetadata,
                 analogProperties.EngineeringUnitsRaw,
-                analogProperties.EURangeRaw);
+                analogProperties.EURangeRaw,
+                node.StableKey,
+                node.MotionDeviceKey,
+                node.AxisKey);
         }
         catch (ServiceResultException ex)
         {
@@ -119,7 +122,10 @@ public sealed class SnapshotReadService(Session session)
             SourceTimestamp: null,
             ServerTimestamp: null,
             "<not available>",
-            node.Heuristic);
+            node.Heuristic,
+            StableKey: node.StableKey,
+            MotionDeviceKey: node.MotionDeviceKey,
+            AxisKey: node.AxisKey);
     }
 
     private static string? ReadDataType(DataValueCollection results)

@@ -76,4 +76,6 @@ public sealed record NodeDiscoveryInfo(
     string DisplayName,
     string NodeId,
     string TypeDefinition,
-    string Evidence);
+    string Evidence,
+    string? StableKey = null,
+    string? NamespaceUri = null);

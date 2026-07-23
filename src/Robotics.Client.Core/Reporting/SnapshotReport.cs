@@ -24,7 +24,10 @@ public sealed record SnapshotValueReport(
     EngineeringUnitMetadataReport? EngineeringUnit = null,
     EuRangeMetadataReport? EURangeMetadata = null,
     string? EngineeringUnitsRaw = null,
-    string? EURangeRaw = null);
+    string? EURangeRaw = null,
+    string? StableKey = null,
+    string? MotionDeviceKey = null,
+    string? AxisKey = null);
 
 public sealed record EngineeringUnitMetadataReport(
     string? NamespaceUri,
@@ -53,4 +56,7 @@ public sealed record SnapshotNode(
     string Label,
     string BrowseName,
     NodeId NodeId,
-    bool Heuristic);
+    bool Heuristic,
+    string? StableKey = null,
+    string? MotionDeviceKey = null,
+    string? AxisKey = null);

@@ -133,7 +133,8 @@ public sealed class GatewayOpcUaClient(
                     .Where(section => selectedSections.Contains(section.Name, StringComparer.Ordinal))
                     .Select(ToDto)
                     .ToArray(),
-                Warnings: discoveryReport.Warnings);
+                Warnings: discoveryReport.Warnings,
+                MotionInventory: ToDto(MotionInventoryBuilder.Build(discoveryReport, snapshotReport)));
 
             return new SnapshotResult(snapshot, Error: null, HttpStatusCodes.Status200OK);
         }
@@ -467,7 +468,10 @@ public sealed class GatewayOpcUaClient(
               report.EngineeringUnit is null ? null : new EngineeringUnitMetadataDto(report.EngineeringUnit.NamespaceUri, report.EngineeringUnit.UnitId, report.EngineeringUnit.DisplayName, report.EngineeringUnit.Description, report.EngineeringUnit.RawDiagnostic),
               report.EURangeMetadata is null ? null : new EuRangeMetadataDto(report.EURangeMetadata.Low, report.EURangeMetadata.High, report.EURangeMetadata.RawDiagnostic),
               report.EngineeringUnitsRaw,
-              report.EURangeRaw);
+              report.EURangeRaw,
+              report.StableKey,
+              report.MotionDeviceKey,
+              report.AxisKey);
     }
 
     private static MethodCallArgumentDto ToDto(MethodInvocationArgumentValue argument)
@@ -552,6 +556,12 @@ public sealed class GatewayOpcUaClient(
             report.Evidence);
     }
 
+    private static MotionInventoryDto ToDto(MotionInventoryReport report) =>
+        new(report.RobotIdentity, report.MotionDeviceSystems.Select(system =>
+            new MotionDeviceSystemInventoryDto(ToDto(system.System), system.MotionDevices.Select(device =>
+                new MotionDeviceInventoryDto(ToDto(device.MotionDevice), device.Axes.Select(axis =>
+                    new AxisInventoryDto(ToDto(axis.Axis), axis.MotionDeviceKey, axis.StableKey, axis.ActualPosition is null ? null : ToDto(axis.ActualPosition), axis.Diagnostics)).ToArray(), device.Diagnostics)).ToArray())).ToArray(), report.Diagnostics);
+
     private static MethodArgumentsDto ToDto(MethodArgumentsReport report)
     {
         return new MethodArgumentsDto(
@@ -583,6 +593,8 @@ public sealed class GatewayOpcUaClient(
             report.DisplayName,
             report.NodeId,
             report.TypeDefinition,
-            report.Evidence);
+            report.Evidence,
+            report.StableKey,
+            report.NamespaceUri);
     }
 }

@@ -18,7 +18,8 @@ public sealed record LiveSnapshotMessageDto(
     string DisplayName,
     string EndpointUrl,
     DateTime GeneratedAtUtc,
-    IReadOnlyList<SnapshotSectionDto> Sections);
+    IReadOnlyList<SnapshotSectionDto> Sections,
+    MotionInventoryDto? MotionInventory = null);
 
 public sealed record LiveDataChangeMessageDto(
     string Type,
@@ -33,7 +34,10 @@ public sealed record LiveDataChangeMessageDto(
     DateTime? SourceTimestamp,
     DateTime? ServerTimestamp,
     string ValueText,
-    string Discovery);
+    string Discovery,
+    string? StableKey = null,
+    string? MotionDeviceKey = null,
+    string? AxisKey = null);
 
 public sealed record LiveErrorMessageDto(
     string Type,

@@ -7,7 +7,8 @@ public sealed record SnapshotDto(
     int? RoboticsNamespaceIndex,
     DateTime GeneratedAtUtc,
     IReadOnlyList<SnapshotSectionDto> Sections,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    MotionInventoryDto? MotionInventory = null);
 
 public sealed record SnapshotSectionDto(
     string Name,
@@ -29,7 +30,15 @@ public sealed record SnapshotValueDto(
     EngineeringUnitMetadataDto? EngineeringUnit = null,
     EuRangeMetadataDto? EURangeMetadata = null,
     string? EngineeringUnitsRaw = null,
-    string? EURangeRaw = null);
+    string? EURangeRaw = null,
+    string? StableKey = null,
+    string? MotionDeviceKey = null,
+    string? AxisKey = null);
+
+public sealed record MotionInventoryDto(string RobotIdentity, IReadOnlyList<MotionDeviceSystemInventoryDto> MotionDeviceSystems, IReadOnlyList<string> Diagnostics);
+public sealed record MotionDeviceSystemInventoryDto(NodeDiscoveryDto System, IReadOnlyList<MotionDeviceInventoryDto> MotionDevices);
+public sealed record MotionDeviceInventoryDto(NodeDiscoveryDto MotionDevice, IReadOnlyList<AxisInventoryDto> Axes, IReadOnlyList<string> Diagnostics);
+public sealed record AxisInventoryDto(NodeDiscoveryDto Axis, string MotionDeviceKey, string StableKey, SnapshotValueDto? ActualPosition, IReadOnlyList<string> Diagnostics);
 
 public sealed record EngineeringUnitMetadataDto(string? NamespaceUri, int? UnitId, string? DisplayName, string? Description, string? RawDiagnostic = null);
 public sealed record EuRangeMetadataDto(double Low, double High, string? RawDiagnostic = null);

@@ -8,7 +8,10 @@ public sealed record DataChangeNotification(
     DateTime TimestampUtc,
     DateTime? SourceTimestamp,
     DateTime? ServerTimestamp,
-    string ValueText);
+    string ValueText,
+    string? StableKey = null,
+    string? MotionDeviceKey = null,
+    string? AxisKey = null);
 
 public sealed record SubscriptionDataChangeItemStatus(
     SnapshotNode Node,

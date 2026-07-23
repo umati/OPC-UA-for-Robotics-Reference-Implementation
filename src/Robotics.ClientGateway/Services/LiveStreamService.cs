@@ -124,7 +124,8 @@ public sealed class LiveStreamService(
                     "snapshot",
                     robot.Id, robot.DisplayName, endpointUrl,
                     DateTime.UtcNow,
-                    snapshotReport.Sections.Select(ToDto).ToArray()), streamCancellation.Token);
+                    snapshotReport.Sections.Select(ToDto).ToArray(),
+                    ToDto(MotionInventoryBuilder.Build(discoveryReport, snapshotReport))), streamCancellation.Token);
             }
 
             await using SubscriptionDataChangeRegistration registration = await CreateSubscriptionAsync(
@@ -474,7 +475,10 @@ public sealed class LiveStreamService(
             notification.SourceTimestamp,
             notification.ServerTimestamp,
             notification.ValueText,
-            notification.Node.Heuristic ? "heuristic" : "standard");
+            notification.Node.Heuristic ? "heuristic" : "standard",
+            notification.StableKey ?? notification.Node.StableKey,
+            notification.MotionDeviceKey ?? notification.Node.MotionDeviceKey,
+            notification.AxisKey ?? notification.Node.AxisKey);
     }
 
     private static SnapshotSectionDto ToDto(SnapshotSectionReport report)
@@ -502,8 +506,20 @@ public sealed class LiveStreamService(
               report.EngineeringUnit is null ? null : new EngineeringUnitMetadataDto(report.EngineeringUnit.NamespaceUri, report.EngineeringUnit.UnitId, report.EngineeringUnit.DisplayName, report.EngineeringUnit.Description, report.EngineeringUnit.RawDiagnostic),
               report.EURangeMetadata is null ? null : new EuRangeMetadataDto(report.EURangeMetadata.Low, report.EURangeMetadata.High, report.EURangeMetadata.RawDiagnostic),
               report.EngineeringUnitsRaw,
-              report.EURangeRaw);
+              report.EURangeRaw,
+              report.StableKey,
+              report.MotionDeviceKey,
+              report.AxisKey);
     }
+
+    private static MotionInventoryDto ToDto(MotionInventoryReport report) =>
+        new(report.RobotIdentity, report.MotionDeviceSystems.Select(system =>
+            new MotionDeviceSystemInventoryDto(ToDto(system.System), system.MotionDevices.Select(device =>
+                new MotionDeviceInventoryDto(ToDto(device.MotionDevice), device.Axes.Select(axis =>
+                    new AxisInventoryDto(ToDto(axis.Axis), axis.MotionDeviceKey, axis.StableKey, axis.ActualPosition is null ? null : ToDto(axis.ActualPosition), axis.Diagnostics)).ToArray(), device.Diagnostics)).ToArray())).ToArray(), report.Diagnostics);
+
+    private static NodeDiscoveryDto ToDto(NodeDiscoveryInfo report) =>
+        new(report.BrowseName, report.DisplayName, report.NodeId, report.TypeDefinition, report.Evidence, report.StableKey, report.NamespaceUri);
 
     private static bool IsExpectedOpcUaFailure(Exception ex)
     {
