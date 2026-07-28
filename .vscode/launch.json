@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Terminal Capture Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/.vscode-terminal-capture"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/.vscode-terminal-capture/out/**/*.js"
+      ],
+      "preLaunchTask": "Compile Terminal Capture Extension"
+    }
+  ]
+}

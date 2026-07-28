@@ -16,3 +16,8 @@ generated/opcua-robotics/**/*.bak
 
 *.ps1
 !scripts/*.ps1
+.vscode-terminal-capture/
+Install-TerminalCapture.ps1
+Install-TerminalCaptureExtension.ps1
+*.vsix
+.vscode/terminal-layout.json

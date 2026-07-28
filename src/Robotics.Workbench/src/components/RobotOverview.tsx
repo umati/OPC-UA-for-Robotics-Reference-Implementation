@@ -10,7 +10,7 @@ const SummaryCard = ({ label, selected }: { label: string; selected: SelectedRun
 
 export default function RobotOverview({ robot, discovery, snapshot, equipment, axes, live, states, onRefresh, onLive }: Props) {
   return <section className="robot-overview">
-    <Robot3DViewport axes={axes} snapshots={[snapshot, equipment]} live={live} imageUrl={robot.imageUrl}/>
+    <Robot3DViewport axes={axes} snapshots={[snapshot, equipment]} motionInventory={snapshot?.motionInventory || equipment?.motionInventory} live={live} imageUrl={robot.imageUrl}/>
     <div className="robot-overview-info">
       <div className="robot-overview-heading"><div><span className="eyebrow">ROBOT / {robot.id}</span><h2>{robot.displayName}</h2><RobotIdentity discovery={discovery} snapshot={snapshot} equipment={equipment}/></div><div className="robot-card-actions"><button aria-label="Refresh robot" onClick={onRefresh}>↻</button><button className="live-button" onClick={onLive}><span className={`status-dot ${live}`}/>{live === 'connected' ? 'Live' : 'Connect live'}</button></div></div>
       <div className="robot-kpis"><SummaryCard label="System operation" selected={states.system}/><SummaryCard label="Task control" selected={states.task}/><SummaryCard label="Control" selected={states.control}/><SummaryCard label="Mode" selected={states.mode}/></div>
