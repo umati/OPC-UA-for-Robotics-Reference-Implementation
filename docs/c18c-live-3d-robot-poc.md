@@ -91,7 +91,7 @@ The viewport scales between approximately 360px and 460px high, uses a three-qua
 
 The robot-scoped REST snapshot and the live stream’s initial `snapshot` message are both valid sources for initial rendering. The Workbench resolves each discovered `ActualPosition` by axis identity and qualified local BrowseName, validates the exact StatusCode and EngineeringUnits, converts verified degrees/radians to renderer radians, and seeds the first interpolation target from those values. Missing, Bad, Uncertain, unsupported, and non-finite values never become zero; a retained Good value may remain visible, while unresolved joints retain only the generic model baseline.
 
-The procedural model has inspectable per-joint calibration in `GenericSixAxisRobot.ts`:
+The procedural model has inspectable per-joint calibration in the C18C.2b reference topology:
 
 | Joint | Axis | Visual zero offset | Direction |
 | --- | --- | ---: | ---: |
@@ -102,7 +102,7 @@ The procedural model has inspectable per-joint calibration in `GenericSixAxisRob
 | B | Z | 0° | +1 |
 | T | X | 0° | +1 |
 
-These are Workbench visual-model decisions, not OPC UA values. The renderer applies the continuous formula `visual rotation = zero offset + direction × ActualPosition`; there is no all-zero special-case branch or decorative idle animation. Consequently, six zero ActualPosition values produce the same calibrated articulated pose that the normal transform pipeline uses for every other position, and a small nonzero value moves continuously from it.
+These are Workbench visual-model decisions, not OPC UA values. The topology renderer applies the continuous formula `visual rotation = zero offset + direction × converted ActualPosition`; there is no all-zero special-case branch or decorative idle animation. Consequently, six zero ActualPosition values produce the same calibrated articulated pose that the normal transform pipeline uses for every other position, and a small nonzero value moves continuously from it.
 
 ### Freshness semantics
 

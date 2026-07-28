@@ -22,7 +22,7 @@ OPC UA motion inventory
   → Three.js scene
 ```
 
-The profile is a local Workbench decision. Its `base`, `shoulder`, `elbow`, `wrist1`, `wrist2`, and `wrist3` visual-joint identifiers are distinct from the source Axis identities. The profile is the one place that selects the local `SAxis`, `LAxis`, `UAxis`, `RAxis`, `BAxis`, and `TAxis` BrowseNames, expected angular units, direction, calibrated zero offsets, and rendering scale. Those names are not standardized OPC UA Robotics semantics.
+The profile is a local Workbench decision. Its `base`, `shoulder`, `elbow`, `wrist1`, `wrist2`, and `wrist3` visual-joint identifiers are distinct from the source Axis identities. The profile selects the local `SAxis`, `LAxis`, `UAxis`, `RAxis`, `BAxis`, and `TAxis` BrowseNames and expected angular units. The C18C.2b topology owns visual direction, calibrated zero offsets, rendering scale, hierarchy, axes, and geometry. Those names and visual decisions are not standardized OPC UA Robotics semantics.
 
 Resolution is scoped to one MotionDevice and uses stable MotionDevice/Axis keys from the normalized inventory. It never uses namespace indexes, browse order, alphabetical order, DisplayName, or MotionDevice ownership as visual parenthood. Missing or duplicate required bindings fail safely; an extra Axis remains in the generic inventory and is reported as informationally unbound. A source non-Good StatusCode remains exact and prevents fabricated animation. Missing or undecodable unit metadata is retained as raw evidence and produces a diagnostic rather than a guessed conversion.
 
@@ -30,4 +30,4 @@ Initial REST snapshots and WebSocket `snapshot`/`dataChange` updates enter the s
 
 This is intentionally not a generic topology schema: it does not author parent-child graphs, joint types, meshes, or arbitrary robot-family renderers. C18C.2b is the boundary for that future topology work.
 
-The next milestone, C18C.2a.2, should isolate reference profiles from the generic inventory. It may define an explicit visual manifest, but it must not infer a complete kinematic skeleton from OPC UA ownership or browse order.
+The C18C.2b visual topology boundary is documented in [`c18c-visual-topology.md`](c18c-visual-topology.md). It makes the Workbench's explicit tree-shaped visual model separate from inventory and profile resolution. The next milestone, C18C.2c, may extend explicit calibrated models but must not infer a complete kinematic skeleton from OPC UA ownership or browse order.

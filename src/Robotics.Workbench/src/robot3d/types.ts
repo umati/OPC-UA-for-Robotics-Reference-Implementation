@@ -9,7 +9,7 @@ export type DiagnosticSeverity = 'informational' | 'warning' | 'error';
 export type ProfileResolutionDiagnostic = { code: string; severity: DiagnosticSeverity; message: string; visualJointId?: VisualJoint; axisKey?: string };
 
 export type AxisBindingSelector = { browseName: string; expectedMotionDevice: 'single-device-scope'; required: true; unit: 'angular'; motionProfile?: string };
-export type VisualJointDefinition = { visualJointId: VisualJoint; axis: AxisBindingSelector; direction: 1 | -1; zeroOffsetRadians: number; scale: number; optionalLimitRadians?: readonly [number, number] };
+export type VisualJointDefinition = { visualJointId: VisualJoint; axis: AxisBindingSelector };
 export type RobotVisualProfile = { profileId: 'reference-server-six-axis-v1'; displayName: string; joints: readonly VisualJointDefinition[] };
 
 export type ResolvedVisualJoint = {
@@ -20,11 +20,13 @@ export type ResolvedVisualJoint = {
   sourceAxis: DiscoveryNode;
   requiredUnitCategory: 'angular';
   conversion: { unit: UnitKind; scale: number };
-  direction: 1 | -1;
-  zeroOffsetRadians: number;
-  visualScale: number;
+  /** Source conversion only; visual calibration belongs to the topology. */
+  direction?: 1 | -1;
+  zeroOffsetRadians?: number;
+  visualScale?: number;
   rawValue?: number;
   convertedVisualValue?: number;
+  lastGoodConvertedValue?: number;
   renderRadians?: number;
   statusCode?: string;
   sourceTimestamp?: string | null;
