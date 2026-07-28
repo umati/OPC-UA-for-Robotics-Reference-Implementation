@@ -1,6 +1,6 @@
 import { DiscoveryNode, MotionInventory, Snapshot, SnapshotValue } from '../api/types';
 
-export type VisualJoint = 'base' | 'shoulder' | 'elbow' | 'wrist1' | 'wrist2' | 'wrist3';
+export type VisualJoint = 'base' | 'shoulder' | 'elbow' | 'wrist1' | 'wrist2' | 'wrist3' | (string & {});
 export const visualJoints: VisualJoint[] = ['base', 'shoulder', 'elbow', 'wrist1', 'wrist2', 'wrist3'];
 export type MappingStatus = 'matched' | 'notMatched' | 'ambiguous' | 'invalid';
 export type Freshness = 'live' | 'stale' | 'disconnected' | 'unavailable';
